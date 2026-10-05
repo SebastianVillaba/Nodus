@@ -1,1 +1,3 @@
 uploads/
+# Scripts de base de datos (datos base con usuarios y datos personales): no se versionan
+database/
