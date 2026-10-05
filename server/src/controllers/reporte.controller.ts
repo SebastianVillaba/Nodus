@@ -166,6 +166,8 @@ export const reporteCierreCaja = async (req: Request, res: Response): Promise<vo
     // recordset[3] = Detalle de Arqueo Tarjeta Crédito
     // recordset[4] = Detalle de Arqueo Tarjeta Débito
     // recordset[5] = Detalle de Arqueo Transferencias
+    // recordset[6] = Ventas a crédito de la caja (migración 004)
+    // recordset[7] = Cobros de créditos recibidos en la caja (migración 004)
 
     const recordsets = (result as typeof result & { recordsets?: any[] }).recordsets;
 
@@ -177,7 +179,9 @@ export const reporteCierreCaja = async (req: Request, res: Response): Promise<vo
       arqueoMoneda: recordsets?.[2] ?? [],
       tarjetasCredito: recordsets?.[3] ?? [],
       tarjetasDebito: recordsets?.[4] ?? [],
-      transferencias: recordsets?.[5] ?? []
+      transferencias: recordsets?.[5] ?? [],
+      ventasCredito: recordsets?.[6] ?? [],
+      cobros: recordsets?.[7] ?? []
     });
   } catch (error) {
     sendError(res, error, 'Error al generar reporte de cierre de caja');

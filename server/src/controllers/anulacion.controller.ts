@@ -191,3 +191,37 @@ export const anularCargaProducto = async (req: Request, res: Response): Promise<
   }
 };
 
+
+/**
+ * Anula un recibo de cobro de créditos. Se puede en cualquier momento; el autorizador debe tener
+ * permiso de anular ventas (sp_permisoAnular tipo 'COBRO').
+ *
+ * Body: { idCobroCredito, explica, usuarioAutorizador, passwordAutorizador }
+ */
+export const anularCobroCredito = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { idCobroCredito, explica } = req.body;
+
+    if (!idCobroCredito || !explica) {
+      res.status(400).json({ success: false, message: 'Faltan parámetros requeridos: idCobroCredito, explica' });
+      return;
+    }
+
+    const idUsuarioAutorizador = await obtenerAutorizador(req, res, 'COBRO');
+    if (idUsuarioAutorizador === null) return;
+
+    await executeRequest({
+      query: 'sp_anularCobroCredito',
+      isStoredProcedure: true,
+      inputs: [
+        { name: 'idCobroCredito', type: sql.Int, value: Number(idCobroCredito) },
+        { name: 'idUsuario', type: sql.Int, value: idUsuarioAutorizador },
+        { name: 'motivo', type: sql.VarChar(255), value: String(explica) },
+      ] as any,
+    });
+
+    res.status(200).json({ success: true, message: 'Recibo anulado correctamente' });
+  } catch (error: any) {
+    sendError(res, error, 'Error al anular el recibo');
+  }
+};

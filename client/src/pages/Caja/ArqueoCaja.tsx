@@ -20,6 +20,7 @@ import MoneyOffIcon from '@mui/icons-material/MoneyOff';
 import SyncIcon from '@mui/icons-material/Sync';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 
 import DetArqueoEfectivo from '../../components/Caja/detArqueoEfectivo';
 import DetArqueoGastos from '../../components/Caja/detArqueoGastos';
@@ -27,6 +28,7 @@ import DetArqueoTransferencias from '../../components/Caja/detArqueoTransferenci
 import DetArqueoTarjetaCredito from '../../components/Caja/detArqueoTarjetaCredito';
 import DetArqueoTarjetaDebito from '../../components/Caja/detArqueoTarjetaDebito';
 import DetArqueoMoneda from '../../components/Caja/detArqueoMoneda';
+import DetArqueoCredito from '../../components/Caja/detArqueoCredito';
 
 import RequirePermission from '../../components/RequirePermission';
 import { useTerminal } from '../../hooks/useTerminal';
@@ -53,9 +55,12 @@ const ArqueoCaja: React.FC = () => {
     const [totalTarjetaCredito, setTotalTarjetaCredito] = useState(0);
     const [totalTarjetaDebito, setTotalTarjetaDebito] = useState(0);
     const [totalTransferencias, setTotalTransferencias] = useState(0);
+    // Ventas a crédito (se suman solas, no entra dinero) y cobros de créditos (dinero recibido)
+    const [totalVentasCredito, setTotalVentasCredito] = useState(0);
+    const [totalCobros, setTotalCobros] = useState(0);
 
-    // Calcular total arqueado
-    const totalArqueado = totalEfectivo + totalMonedas + totalTarjetaCredito + totalTarjetaDebito + totalTransferencias;
+    // Calcular total arqueado (las ventas a crédito cuentan como un medio más)
+    const totalArqueado = totalEfectivo + totalMonedas + totalTarjetaCredito + totalTarjetaDebito + totalTransferencias + totalVentasCredito;
 
     // Verificar estado de caja al cargar
     useEffect(() => {
@@ -291,6 +296,30 @@ const ArqueoCaja: React.FC = () => {
                                 </Typography>
                             </Box>
                         </Grid>
+                        {cajaAbierta && (
+                            <>
+                                <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                                        <Typography variant="subtitle2" color="text.secondary">
+                                            Ventas a Crédito
+                                        </Typography>
+                                        <Typography variant="h6" color="secondary.main" fontWeight="bold">
+                                            Gs. {formatCurrency(totalVentasCredito)}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                                        <Typography variant="subtitle2" color="text.secondary">
+                                            Cobros Créditos
+                                        </Typography>
+                                        <Typography variant="h6" color="text.primary" fontWeight="bold">
+                                            Gs. {formatCurrency(totalCobros)}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            </>
+                        )}
                         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
                             <Box sx={{ textAlign: 'center', p: 1 }}>
                                 <Typography variant="subtitle2" color="text.secondary">
@@ -429,6 +458,31 @@ const ArqueoCaja: React.FC = () => {
                             </CardContent>
                         </Card>
                     </Grid>
+
+                    {/* Ventas a crédito y cobros (automático) */}
+                    {cajaAbierta && (
+                        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
+                            <Card elevation={3}>
+                                <CardHeader
+                                    avatar={<RequestQuoteIcon color="secondary" />}
+                                    title={
+                                        <Typography variant="h6" fontWeight="bold">
+                                            🧾 Créditos (automático)
+                                        </Typography>
+                                    }
+                                    sx={{ backgroundColor: '#ede7f6', borderBottom: '1px solid #d1c4e9' }}
+                                />
+                                <CardContent>
+                                    <DetArqueoCredito
+                                        key={`credito-ventas-${refreshKey}`}
+                                        idTerminalWeb={idTerminalWeb || 0}
+                                        onTotalVentasCreditoChange={setTotalVentasCredito}
+                                        onTotalCobrosChange={setTotalCobros}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    )}
 
                     {/* Gastos */}
                     <Grid size={{ xs: 12, md: 6, lg: 4 }}>

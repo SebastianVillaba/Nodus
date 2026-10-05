@@ -10,6 +10,7 @@ export interface CrearUsuarioRequest {
     anularRecepcion: boolean;
     anularAjuste: boolean;
     anularCargaProducto: boolean;
+    anularCobro?: boolean;
 }
 
 export interface ModificarUsuarioRequest {
@@ -24,6 +25,7 @@ export interface ModificarUsuarioRequest {
     anularRecepcion: boolean;
     anularAjuste: boolean;
     anularCargaProducto: boolean;
+    anularCobro?: boolean;
 }
 
 export interface Usuario {
@@ -49,4 +51,5 @@ export interface UsuarioDetalle {
     anularRecepcion: boolean;
     anularAjuste: boolean;
     anularCargaProducto: boolean;
+    anularCobro?: boolean;
 }

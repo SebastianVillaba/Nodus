@@ -10,7 +10,8 @@ import {
     FormControl,
     InputLabel,
     Select,
-    MenuItem
+    MenuItem,
+    Switch
 } from '@mui/material';
 import TextField from '../UppercaseTextField';
 import { useState, useEffect } from 'react';
@@ -303,6 +304,42 @@ export const TipoPersonaForm = ({ formData, setFormData }: TipoPersonaFormProps)
                                         </Select>
                                     </FormControl>
                                 </Stack>
+
+                                {/* Crédito del cliente (migración 002) */}
+                                <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
+                                    Crédito
+                                </Typography>
+                                {formData.idPersona ? (
+                                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+                                        <FormControlLabel
+                                            control={
+                                                <Switch
+                                                    checked={formData.acreditar || false}
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, acreditar: e.target.checked }))}
+                                                    size="small"
+                                                />
+                                            }
+                                            label="Puede comprar a crédito"
+                                        />
+                                        <TextField
+                                            label="Límite de crédito (Gs.)"
+                                            value={formData.limiteCredito ? new Intl.NumberFormat('es-PY').format(formData.limiteCredito) : ''}
+                                            onChange={(e) => {
+                                                const limite = Number(e.target.value.replace(/\D/g, '')) || 0;
+                                                setFormData(prev => ({ ...prev, limiteCredito: limite }));
+                                            }}
+                                            size="small"
+                                            sx={{ width: '220px' }}
+                                            disabled={!formData.acreditar}
+                                            inputProps={{ inputMode: 'numeric' }}
+                                            helperText="Deuda máxima permitida"
+                                        />
+                                    </Stack>
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                        Guarde primero el cliente; el crédito se habilita al editarlo.
+                                    </Typography>
+                                )}
                             </Stack>
                         )}
                     </Stack>

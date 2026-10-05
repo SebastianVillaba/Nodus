@@ -834,3 +834,31 @@ export const listarMonedas = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+
+/**
+ * Ventas a crédito y cobros de créditos de la caja abierta de la terminal (pantalla de arqueo).
+ * Las ventas a crédito se suman solas a lo arqueado; los cobros a lo esperado.
+ */
+export const resumenCreditoCaja = async (req: Request, res: Response): Promise<void> => {
+  const idTerminalWeb = Number(req.query.idTerminalWeb);
+  if (!Number.isInteger(idTerminalWeb) || idTerminalWeb <= 0) {
+    res.status(400).json({ success: false, message: "El parámetro 'idTerminalWeb' es obligatorio" });
+    return;
+  }
+
+  try {
+    const result = await executeRequest({
+      query: 'sp_resumenCreditoCaja',
+      isStoredProcedure: true,
+      inputs: [{ name: 'idTerminalWeb', type: sql.Int, value: idTerminalWeb }],
+    });
+    const recordsets = (result as typeof result & { recordsets?: any[] }).recordsets;
+    res.status(200).json({
+      success: true,
+      ventasCredito: recordsets?.[0] ?? [],
+      cobros: recordsets?.[1] ?? [],
+    });
+  } catch (error: any) {
+    sendError(res, error, 'Error al consultar las ventas a crédito de la caja');
+  }
+};

@@ -97,5 +97,8 @@ export interface ModificarPersonaRequest {
   tipoPersonaCli?: boolean;
   codigo?: number;
   idGrupoCliente?: number;
-  tipoVendedor?: boolean;
+  tipoVendedor?: boolean;
+  // Crédito del cliente (migración 002)
+  acreditar?: boolean;
+  limiteCredito?: number;
 }

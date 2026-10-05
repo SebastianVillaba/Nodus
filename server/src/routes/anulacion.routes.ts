@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verificarPermisoAnular, anularFacturacion, anularCargaProducto } from '../controllers/anulacion.controller';
+import { verificarPermisoAnular, anularFacturacion, anularCargaProducto, anularCobroCredito } from '../controllers/anulacion.controller';
 
 const router = Router();
 
@@ -14,6 +14,10 @@ router.post('/facturacion', anularFacturacion);
 // Anula una carga de productos
 // POST /api/anulacion/carga-producto
 router.post('/carga-producto', anularCargaProducto);
+
+// Anula un recibo de cobro de créditos
+// POST /api/anulacion/cobro-credito
+router.post('/cobro-credito', anularCobroCredito);
 
 export default router;
 

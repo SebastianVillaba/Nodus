@@ -17,6 +17,8 @@ export interface Persona {
   nombreFantasia?: string;
   codigo?: number;
   idGrupoCliente?: number;           
+  acreditar?: boolean;               // Cliente habilitado para comprar a crédito
+  limiteCredito?: number;            // Tope de deuda del cliente
   tipoPersonaJur: boolean;           
   tipoProveedor: boolean;            
   responsableProveedor?: string;    

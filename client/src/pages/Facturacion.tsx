@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -40,6 +40,10 @@ import CajaSelectorModal from '../components/CajaSelectorModal';
 import PagoModal from '../components/PagoModal';
 import TipoComprobanteModal from '../components/TipoComprobanteModal';
 import { useTerminal } from '../hooks/useTerminal';
+import { timbradoService } from '../services/timbrado.service';
+import type { EstadoTimbrado } from '../services/timbrado.service';
+import { consultarCreditoCliente } from '../services/persona.service';
+import type { CreditoCliente } from '../services/persona.service';
 import SearchClienteModal from '../components/SearchClienteModal';
 import RequirePermission from '../components/RequirePermission';
 import VendedorValidationModal from '../components/VendedorValidationModal';
@@ -47,10 +51,29 @@ import VendedorValidationModal from '../components/VendedorValidationModal';
 const Facturacion: React.FC = () => {
   // Obtener información de la terminal
   const { idTerminalWeb } = useTerminal();
+  const [estadoTimbrado, setEstadoTimbrado] = useState<EstadoTimbrado | null>(null);
+
+  // Estado del timbrado de la terminal (vencimiento / rango) para avisar antes de facturar
+  const consultarEstadoTimbrado = useCallback(async () => {
+    if (!idTerminalWeb) return;
+    try {
+      setEstadoTimbrado(await timbradoService.estado(idTerminalWeb));
+    } catch (error) {
+      console.error('Error al consultar el estado del timbrado:', error);
+    }
+  }, [idTerminalWeb]);
+
+  useEffect(() => {
+    consultarEstadoTimbrado();
+  }, [consultarEstadoTimbrado]);
   const [numeroFactura, setNumeroFactura] = useState<string | undefined>();
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [condicion, setCondicion] = useState<'CONTADO' | 'CREDITO'>('CONTADO');
+  // Venta a crédito (migración 002)
+  const [creditoCliente, setCreditoCliente] = useState<CreditoCliente | null>(null);
+  const [cantidadCuotas, setCantidadCuotas] = useState(1);
+  const [diasEntreCuotas, setDiasEntreCuotas] = useState(30);
   const [items, setItems] = useState<ItemFactura[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -385,6 +408,26 @@ const Facturacion: React.FC = () => {
       return;
     }
 
+    // Venta a crédito: se valida acá para avisar antes; el servidor vuelve a validar todo
+    if (condicion === 'CREDITO') {
+      if (!cliente?.idCliente || cliente.idCliente === 1) {
+        setError('Para vender a crédito seleccione un cliente (F2).');
+        return;
+      }
+      if (!creditoCliente?.acreditar) {
+        setError(`El cliente ${cliente.nombre} no está habilitado para compras a crédito.`);
+        return;
+      }
+      if (total > creditoCliente.disponible) {
+        setError(`La venta supera el crédito disponible del cliente (Gs. ${formatGs(creditoCliente.disponible)}).`);
+        return;
+      }
+      if (cantidadCuotas < 1 || cantidadCuotas > 60 || diasEntreCuotas < 1 || diasEntreCuotas > 365) {
+        setError('Revise las cuotas: entre 1 y 60 cuotas, cada 1 a 365 días.');
+        return;
+      }
+    }
+
     // Abrir modal de pago
     setOpenPagoModal(true);
   };
@@ -397,6 +440,12 @@ const Facturacion: React.FC = () => {
       setVendedorAutorizado(null);
     }
     setOpenPagoModal(false);
+
+    // A crédito siempre es factura (nunca ticket): se guarda directo
+    if (condicion === 'CREDITO') {
+      handleGuardarVenta(false, idVendedor);
+      return;
+    }
     setOpenTipoComprobanteModal(true);
   };
 
@@ -407,7 +456,7 @@ const Facturacion: React.FC = () => {
   }
 
   // Guardar venta según el tipo de comprobante seleccionado
-  const handleGuardarVenta = async (esTicket: boolean) => {
+  const handleGuardarVenta = async (esTicket: boolean, idVendedorElegido?: number | null) => {
     setOpenTipoComprobanteModal(false);
 
     try {
@@ -426,14 +475,16 @@ const Facturacion: React.FC = () => {
         idPersonaJur: 1, // TODO: Obtener de la configuración
         idMovimientoCaja: parseInt(idMovimientoCaja),
         idTipoPago: 1, // TODO: Obtener del formulario
-        idTipoVenta: 1, // TODO: Obtener del formulario
+        idTipoVenta: condicion === 'CREDITO' ? 2 : 1,
         idCliente: cliente?.idCliente || 1, // 1 = Cliente SIN NOMBRE
         ruc: cliente?.documento || 'XXXXXXX',
         nombreCliente: cliente?.nombre || 'SIN NOMBRE',
         totalVenta: total,
         totalDescuento: descuentoTotal,
         ticket: esTicket ? 1 : 0,
-        idVendedor: vendedorAutorizado?.idVendedor || null
+        idVendedor: idVendedorElegido ?? vendedorAutorizado?.idVendedor ?? null,
+        cantidadCuotas: condicion === 'CREDITO' ? cantidadCuotas : 1,
+        diasEntreCuotas: condicion === 'CREDITO' ? diasEntreCuotas : 30
       };
 
       console.log('Venta a guardar:', ventaData);
@@ -571,10 +622,15 @@ const Facturacion: React.FC = () => {
   // Nueva factura
   const handleNuevaFactura = async () => {
     setCliente(null);
+    setCondicion('CONTADO');
+    setCreditoCliente(null);
+    setCantidadCuotas(1);
+    setDiasEntreCuotas(30);
     setItems([]);
     setVendedorAutorizado(null);
     setError('');
     setSuccess('');
+    consultarEstadoTimbrado();
     // Incrementar número de factura
     try {
       const facturaData = await ventaService.consultaFacturaCorrelativa(idTerminalWeb);
@@ -615,7 +671,15 @@ const Facturacion: React.FC = () => {
     };
     setCliente(nuevoCliente);
     setSuccess('Cliente seleccionado correctamente');
+
+    // Situación de crédito del cliente (límite, deuda, disponible)
+    setCreditoCliente(null);
+    consultarCreditoCliente(clienteData.idCliente)
+      .then(setCreditoCliente)
+      .catch((error) => console.error('Error al consultar el crédito del cliente:', error));
   };
+
+  const formatGs = (valor: number) => new Intl.NumberFormat('es-PY', { maximumFractionDigits: 0 }).format(valor || 0);
 
   return (
     <RequirePermission permission="ACCESO_VENTAS">
@@ -701,9 +765,46 @@ const Facturacion: React.FC = () => {
                     onChange={(e) => setCondicion(e.target.value as 'CONTADO' | 'CREDITO')}
                   >
                     <MenuItem value="CONTADO">Contado</MenuItem>
-                    <MenuItem value="CREDITO">Credito</MenuItem>
+                    <MenuItem value="CREDITO">Crédito</MenuItem>
                   </Select>
                 </FormControl>
+
+                {/* Venta a crédito: situación del cliente y plan de cuotas */}
+                {condicion === 'CREDITO' && (
+                  <Stack spacing={1} sx={{ mt: 1 }}>
+                    {!cliente || cliente.idCliente === 1 ? (
+                      <Alert severity="info" sx={{ py: 0 }}>Seleccione el cliente (F2)</Alert>
+                    ) : !creditoCliente ? (
+                      <Alert severity="info" sx={{ py: 0 }}>Consultando crédito...</Alert>
+                    ) : !creditoCliente.acreditar ? (
+                      <Alert severity="error" sx={{ py: 0 }}>Cliente sin crédito habilitado</Alert>
+                    ) : (
+                      <Alert severity={total > creditoCliente.disponible ? 'error' : creditoCliente.montoVencido > 0 ? 'warning' : 'success'} sx={{ py: 0 }}>
+                        Disponible: Gs. {formatGs(creditoCliente.disponible)}
+                        <br />Límite {formatGs(creditoCliente.limiteCredito)} · Deuda {formatGs(creditoCliente.deuda)}
+                        {creditoCliente.montoVencido > 0 && <><br />Vencido: Gs. {formatGs(creditoCliente.montoVencido)}</>}
+                      </Alert>
+                    )}
+                    <Stack direction="row" spacing={1}>
+                      <TextField
+                        label="Cuotas"
+                        size="small"
+                        type="number"
+                        value={cantidadCuotas}
+                        onChange={(e) => setCantidadCuotas(Math.max(1, Number(e.target.value) || 1))}
+                        inputProps={{ min: 1, max: 60 }}
+                      />
+                      <TextField
+                        label="Cada (días)"
+                        size="small"
+                        type="number"
+                        value={diasEntreCuotas}
+                        onChange={(e) => setDiasEntreCuotas(Math.max(1, Number(e.target.value) || 1))}
+                        inputProps={{ min: 1, max: 365 }}
+                      />
+                    </Stack>
+                  </Stack>
+                )}
               </Grid>
             </Grid>
           </Paper>
@@ -751,6 +852,12 @@ const Facturacion: React.FC = () => {
         </div>
 
         {/* Mensajes */}
+        {estadoTimbrado?.mensaje && (
+          <Alert severity={estadoTimbrado.bloquea ? 'error' : 'warning'} sx={{ mb: 2 }}>
+            {estadoTimbrado.mensaje}
+            {estadoTimbrado.bloquea && ' No se pueden emitir facturas (sí tickets) hasta corregirlo en Administración → Timbrados.'}
+          </Alert>
+        )}
         {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => {
           setSuccess('');
@@ -1095,6 +1202,7 @@ const Facturacion: React.FC = () => {
           totalVenta={total}
           onClose={() => setOpenPagoModal(false)}
           onConfirm={handleConfirmarPago}
+          credito={condicion === 'CREDITO' ? { cantidadCuotas, diasEntreCuotas } : null}
         />
 
         {/* Modal de selección de tipo de comprobante */}

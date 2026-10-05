@@ -102,6 +102,8 @@ export default function PersonasABM(): JSX.Element {
         timbrado: infoCompleta.timbrado || '',
         codigo: infoCompleta.codigo,
         idGrupoCliente: infoCompleta.idGrupoCliente,
+        acreditar: !!infoCompleta.acreditar,
+        limiteCredito: Number(infoCompleta.limiteCredito) || 0,
         tipoPersonaJur: !!infoCompleta.nombreFantasia,
         tipoProveedor: !!infoCompleta.responsable || !!infoCompleta.timbrado,
         tipoPersonaFis: !infoCompleta.nombreFantasia,

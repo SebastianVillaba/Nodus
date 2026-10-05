@@ -167,7 +167,9 @@ export const guardarVenta = async (req: Request, res: Response): Promise<void> =
       totalVenta,
       totalDescuento,
       ticket,
-      idVendedor
+      idVendedor,
+      cantidadCuotas,
+      diasEntreCuotas
     } = req.body;
 
     // Validar parámetros obligatorios
@@ -193,7 +195,10 @@ export const guardarVenta = async (req: Request, res: Response): Promise<void> =
       { name: 'totalVenta', type: sql.Money, value: totalVenta },
       { name: 'totalDescuento', type: sql.Money, value: totalDescuento || 0 },
       { name: 'ticket', type: sql.Bit, value: ticket },
-      { name: 'idVendedor', type: sql.Int, value: idVendedor || null }
+      { name: 'idVendedor', type: sql.Int, value: idVendedor || null },
+      // Venta a crédito (idTipoVenta = 2): el SP valida límite y genera las cuotas
+      { name: 'cantidadCuotas', type: sql.Int, value: Number(cantidadCuotas) || 1 },
+      { name: 'diasEntreCuotas', type: sql.Int, value: Number(diasEntreCuotas) || 30 }
     ];
 
     const result = await executeRequest({

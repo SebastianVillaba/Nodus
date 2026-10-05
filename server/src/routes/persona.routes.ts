@@ -1,5 +1,5 @@
 import express from 'express';
-import { buscarInfoPersona, buscarPersona, buscarClientePorRuc, agregarClienteRapido, insertarPersona, consultaCliente, modificarPersona, obtenerGruposCliente } from '../controllers/persona.controller';
+import { buscarInfoPersona, buscarPersona, buscarClientePorRuc, agregarClienteRapido, insertarPersona, consultaCliente, modificarPersona, obtenerGruposCliente, consultarCreditoCliente } from '../controllers/persona.controller';
 
 import { requierePermiso, PERMISOS } from '../Middlewares/permisos.middleware';
 
@@ -14,6 +14,7 @@ router.get('/consultaCliente', consultaCliente);
 router.get('/info', buscarInfoPersona);
 router.get('/buscarCliente', buscarClientePorRuc);
 router.get('/gruposCliente', obtenerGruposCliente);
+router.get('/credito', consultarCreditoCliente);
 // Alta rápida de cliente desde Facturación o Pedidos
 router.post('/agregarClienteRapido', requierePermiso(PERMISOS.ABM, PERMISOS.VENTAS, PERMISOS.PEDIDOS), agregarClienteRapido);
 

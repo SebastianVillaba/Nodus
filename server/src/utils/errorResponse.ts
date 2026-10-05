@@ -3,11 +3,23 @@ import { logger } from './logger';
 import { env } from '../config/env';
 
 /**
+ * Cuando un SP falla por un error de SQL (ej: FK) y después hace RAISERROR con mensaje vacío,
+ * mssql devuelve un error sin mensaje y la causa real queda en precedingErrors. Devuelve el error
+ * que tiene el mensaje útil.
+ */
+const errorConMensaje = (error: any): any => {
+  if (error?.message?.trim()) return error;
+  const previo = (error?.precedingErrors ?? []).find((e: any) => e?.message?.trim());
+  return previo ?? error;
+};
+
+/**
  * Arma el texto del error de SQL Server incluyendo el SP y la línea cuando vienen.
  * Ej: "Violation of UNIQUE KEY constraint 'UQ_ruc'... (sp_agregarClienteRapido, línea 23)"
  */
-export const formatDbError = (error: any): string => {
-  const mensaje = error?.message || 'Error desconocido';
+export const formatDbError = (errorOriginal: any): string => {
+  const error = errorConMensaje(errorOriginal);
+  const mensaje = error?.message?.trim() || 'Error desconocido';
   const ubicacion = [
     error?.procName,
     error?.lineNumber ? `línea ${error.lineNumber}` : null
@@ -44,11 +56,11 @@ export const sendError = (res: Response, error: any, contexto: string, statusDef
   res.status(statusDefault).json({
     success: false,
     message: `${contexto}: ${formatDbError(error)}`,
-    error: error?.message || 'Error desconocido',
+    error: errorConMensaje(error)?.message?.trim() || 'Error desconocido',
     detail: {
-      number: error?.number,
-      procName: error?.procName,
-      lineNumber: error?.lineNumber
+      number: errorConMensaje(error)?.number,
+      procName: errorConMensaje(error)?.procName,
+      lineNumber: errorConMensaje(error)?.lineNumber
     }
   });
 };

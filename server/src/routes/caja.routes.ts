@@ -22,7 +22,8 @@ import {
   listarDetArqueoMonedaTmp,
   eliminarDetArqueoMonedaTmp,
   listarTarjetas,
-  listarMonedas
+  listarMonedas,
+  resumenCreditoCaja
 } from '../controllers/caja.controller';
 
 const router = Router();
@@ -35,6 +36,9 @@ router.post('/abrir', abrirCaja);
 
 // Ruta para cerrar una caja
 router.post('/cerrar', cerrarCaja);
+
+// Ventas a crédito y cobros de la caja abierta (pantalla de arqueo)
+router.get('/resumen-credito', resumenCreditoCaja);
 
 // Ruta para agregar un gasto a la caja
 router.post('/gasto', agregarGastoCaja);

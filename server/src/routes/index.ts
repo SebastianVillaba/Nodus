@@ -30,6 +30,8 @@ import cargaProductosRoutes from './cargaProductos.routes';
 import barcodeRoutes from './barcode.routes';
 import consultaCargaProductosRoutes from './consultaCargaProductos.routes';
 import historialClienteRoutes from './historialCliente.routes';
+import timbradoRoutes from './timbrado.routes';
+import cobroCreditoRoutes from './cobroCredito.routes';
 import { verifyToken, forzarUsuarioAutenticado } from '../Middlewares/auth.middleware';
 import { requierePermiso, requierePermisoEscritura, PERMISOS } from '../Middlewares/permisos.middleware';
 
@@ -79,5 +81,7 @@ router.use('/carga-productos', requierePermisoEscritura(PERMISOS.CARGA_PRODUCTOS
 router.use('/barcode', requierePermisoEscritura(PERMISOS.CARGA_PRODUCTOS, PERMISOS.VER_STOCK), barcodeRoutes);
 router.use('/consulta-carga-productos', consultaCargaProductosRoutes);
 router.use('/historial-cliente', requierePermiso(PERMISOS.HISTORIAL_CLIENTE), historialClienteRoutes);
+router.use('/timbrado', timbradoRoutes);
+router.use('/cobro-credito', cobroCreditoRoutes);
 
 export default router;

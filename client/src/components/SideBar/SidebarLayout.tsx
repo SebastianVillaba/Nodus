@@ -35,6 +35,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import ListSubheader from '@mui/material/ListSubheader';
 import ApiIcon from '@mui/icons-material/Api';
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import { clearSession } from '../../services/auth';
 import { usePermisos } from '../../hooks/usePermission';
 
@@ -191,6 +192,12 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           icon: <ReceiptLongIcon />,
         },
         {
+          text: 'Cobro de Créditos',
+          path: '/cobranzas/cobranza',
+          permiso: 'ACCESO_COBRANZAS',
+          icon: <RequestQuoteIcon />,
+        },
+        {
           text: 'Arqueo de Caja',
           icon: <PointOfSale />,
           subItems: [
@@ -253,6 +260,12 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           icon: <PointOfSale />,
         },
         {
+          text: 'Consulta Cobranzas',
+          path: '/consultas/cobranzas',
+          permiso: 'ACCESO_COBRANZAS',
+          icon: <RequestQuoteIcon />,
+        },
+        {
           text: 'Historial de Cliente',
           path: '/consultas/historial-cliente',
           permiso: 'ACCESO_HISTORIAL_CLIENTE',
@@ -291,6 +304,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
             { text: 'Roles', path: '/administracion/roles', icon: <PeopleIcon />, permiso: 'ACCESO_SEGURIDAD' },
             { text: 'Usuarios', path: '/administracion/usuarios', icon: <PeopleIcon />, permiso: 'ACCESO_SEGURIDAD' },
             { text: 'Terminales', path: '/administracion/terminales', icon: <InventoryIcon />, permiso: 'ACCESO_SEGURIDAD' },
+            { text: 'Timbrados', path: '/administracion/timbrados', icon: <ReceiptIcon />, permiso: 'ACCESO_TIMBRADOS' },
           ],
         },
         {

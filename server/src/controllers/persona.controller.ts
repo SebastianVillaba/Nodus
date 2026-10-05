@@ -234,6 +234,15 @@ export const buscarInfoPersona = async (req: Request, res: Response): Promise<vo
 
     const rowsAffected = result.rowsAffected[0];
 
+    // Datos de crédito del cliente (migración 002), si la persona es cliente
+    const credito = await executeRequest({
+      query: 'SELECT acreditar, limiteCredito FROM dbo.cliente WHERE idPersona = @idPersona',
+      inputs: [{ name: 'idPersona', type: sql.Int, value: Number(idPersona) }],
+    });
+    if (result.recordset[0] && credito.recordset[0]) {
+      Object.assign(result.recordset[0], credito.recordset[0]);
+    }
+
     res.status(200).json({
       succes: true,
       message: 'Busqueda exitosa!',
@@ -435,7 +444,9 @@ export const modificarPersona = async (req: Request, res: Response): Promise<voi
       tipoPersonaCli,
       codigo,
       idGrupoCliente,
-      tipoVendedor
+      tipoVendedor,
+      acreditar,
+      limiteCredito
     } = req.body as ModificarPersonaRequest;
 
     // Validar campos obligatorios CRÍTICOS
@@ -483,6 +494,20 @@ export const modificarPersona = async (req: Request, res: Response): Promise<voi
 
     const rowsAffected = result.rowsAffected[0];
 
+    // Configuración de crédito del cliente (migración 002)
+    if (tipoPersonaCli && acreditar !== undefined) {
+      await executeRequest({
+        query: 'sp_actualizarCreditoCliente',
+        isStoredProcedure: true,
+        inputs: [
+          { name: 'idPersona', type: sql.Int, value: idPersona },
+          { name: 'acreditar', type: sql.Bit, value: Boolean(acreditar) },
+          { name: 'limiteCredito', type: sql.Money, value: Number(limiteCredito) || 0 },
+          { name: 'idUsuario', type: sql.Int, value: idUsuarioMod },
+        ],
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Persona modificada exitosamente",
@@ -509,3 +534,25 @@ export const obtenerGruposCliente = async (req: Request, res: Response): Promise
   }
 };
 
+
+/**
+ * Situación de crédito de un cliente: habilitado, límite, deuda, disponible y vencidos.
+ */
+export const consultarCreditoCliente = async (req: Request, res: Response): Promise<void> => {
+  const idCliente = Number(req.query.idCliente);
+  if (!Number.isInteger(idCliente) || idCliente <= 0) {
+    res.status(400).json({ success: false, message: "El parámetro 'idCliente' es obligatorio" });
+    return;
+  }
+
+  try {
+    const result = await executeRequest({
+      query: 'sp_consultaCreditoCliente',
+      isStoredProcedure: true,
+      inputs: [{ name: 'idCliente', type: sql.Int, value: idCliente }],
+    });
+    res.status(200).json({ success: true, credito: result.recordset[0] ?? null });
+  } catch (error) {
+    sendError(res, error, 'Error al consultar el crédito del cliente');
+  }
+};

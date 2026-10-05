@@ -15,12 +15,15 @@ import {
   TextField as MuiTextField,
 } from '@mui/material';
 import { ventaService } from '../services/venta.service';
+import { calcularCuotas } from '../services/cobroCredito.service';
 
 interface PagoModalProps {
   open: boolean;
   totalVenta: number;
   onClose: () => void;
   onConfirm: (idVendedor: number | null) => void;
+  // Venta a crédito: no se recibe dinero, se muestra el plan de cuotas en vez del vuelto
+  credito?: { cantidadCuotas: number; diasEntreCuotas: number } | null;
 }
 
 const PagoModal: React.FC<PagoModalProps> = ({
@@ -28,6 +31,7 @@ const PagoModal: React.FC<PagoModalProps> = ({
   totalVenta,
   onClose,
   onConfirm,
+  credito = null,
 }) => {
   const [montoCliente, setMontoCliente] = useState<string>('');
   const [vuelto, setVuelto] = useState<number>(0);
@@ -81,14 +85,12 @@ const PagoModal: React.FC<PagoModalProps> = ({
       setSelectedVendedorId('');
       fetchVendedores();
 
-      // Foco automático en el textbox de monto del cliente
+      // Foco automático en el monto del cliente (o en el vendedor si es a crédito)
       setTimeout(() => {
-        if (montoInputRef.current) {
-          montoInputRef.current.focus();
-        }
+        (credito ? vendedorSelectRef.current : montoInputRef.current)?.focus();
       }, 150);
     }
-  }, [open]);
+  }, [open, credito]);
 
   const handleMontoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const rawVal = e.target.value;
@@ -129,7 +131,26 @@ const PagoModal: React.FC<PagoModalProps> = ({
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+          {credito && (
+            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#fff3e0', border: '1px solid #ffcc80' }}>
+              <Typography variant="h6" fontWeight="bold" color="warning.dark">
+                Venta a crédito
+              </Typography>
+              <Typography variant="body1">
+                {(() => {
+                  const cuotas = calcularCuotas(totalVenta, credito.cantidadCuotas);
+                  const base = cuotas[0] ?? 0;
+                  const ultima = cuotas[cuotas.length - 1] ?? 0;
+                  return cuotas.length > 1 && ultima !== base
+                    ? `${cuotas.length - 1} cuota(s) de Gs. ${base.toLocaleString('es-PY')} y la última de Gs. ${ultima.toLocaleString('es-PY')}`
+                    : `${cuotas.length} cuota(s) de Gs. ${base.toLocaleString('es-PY')}`;
+                })()}, cada {credito.diasEntreCuotas} día(s). No se recibe dinero en esta venta.
+              </Typography>
+            </Paper>
+          )}
+
           {/* Monto del Cliente */}
+          {!credito && (
           <Box>
             <Typography variant="h6" gutterBottom>
               Monto del Cliente:
@@ -159,6 +180,7 @@ const PagoModal: React.FC<PagoModalProps> = ({
               helperText="Ingrese el monto recibido del cliente (se formatearán los miles automáticamente)"
             />
           </Box>
+          )}
 
           {/* Total de la Venta */}
           <Box>
@@ -180,6 +202,7 @@ const PagoModal: React.FC<PagoModalProps> = ({
           </Box>
 
           {/* Vuelto */}
+          {!credito && (
           <Box>
             <Typography variant="h6" gutterBottom>
               Vuelto:
@@ -197,6 +220,7 @@ const PagoModal: React.FC<PagoModalProps> = ({
               </Typography>
             </Paper>
           </Box>
+          )}
 
           {/* Vendedor Combobox */}
           <Box>

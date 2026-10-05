@@ -60,6 +60,8 @@ interface PersonaInfo {
 
   // Campos de cliente
   idCliente?: number;
+  acreditar?: boolean;
+  limiteCredito?: number;
   codigo?: number;
   idGrupoCliente?: number;
   nombreGrupoCliente?: string;
@@ -242,4 +244,22 @@ export const personaService = {
       throw new Error(error.response?.data?.message || 'Error al obtener grupos de clientes');
     }
   }
+};
+
+export interface CreditoCliente {
+  idCliente: number;
+  nombreCliente: string;
+  acreditar: boolean;
+  limiteCredito: number;
+  deuda: number;
+  disponible: number;
+  montoVencido: number;
+  cuotasVencidas: number;
+  vencimientoMasAntiguo: string | null;
+}
+
+/** Situación de crédito de un cliente (límite, deuda, disponible, vencidos). */
+export const consultarCreditoCliente = async (idCliente: number): Promise<CreditoCliente | null> => {
+  const response = await axios.get(`${API_BASE_URL}/persona/credito`, { params: { idCliente } });
+  return response.data.credito;
 };

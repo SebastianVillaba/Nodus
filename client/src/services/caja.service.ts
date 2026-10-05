@@ -359,7 +359,21 @@ export const cajaService = {
         });
         return response.data;
     },
+
+    /**
+     * Ventas a crédito y cobros de créditos de la caja abierta de la terminal.
+     * Las ventas a crédito se suman solas a lo arqueado; los cobros a lo esperado por el sistema.
+     */
+    resumenCreditoCaja: async (idTerminalWeb: number): Promise<ResumenCreditoCaja> => {
+        const response = await axios.get(`${API_URL}/caja/resumen-credito`, { params: { idTerminalWeb } });
+        return { ventasCredito: response.data.ventasCredito, cobros: response.data.cobros };
+    },
 };
+
+export interface ResumenCreditoCaja {
+    ventasCredito: { idVenta: number; nroFactura: string; cliente: string; fechaAlta: string; totalVenta: number }[];
+    cobros: { idCobroCredito: number; nroRecibo: number; cliente: string; fechaCobro: string; totalCobrado: number }[];
+}
 
 export default cajaService;
 

@@ -21,6 +21,13 @@ export interface AnularCargaProductoRequest {
   passwordAutorizador: string;
 }
 
+export interface AnularCobroCreditoRequest {
+  idCobroCredito: number;
+  explica: string;
+  usuarioAutorizador: string;
+  passwordAutorizador: string;
+}
+
 export const anulacionService = {
   /**
    * Verifica si un usuario tiene permiso para anular según el tipo indicado.
@@ -57,6 +64,15 @@ export const anulacionService = {
    * Anula una carga de productos.
    * Llama a POST /api/anulacion/carga-producto
    */
+  /**
+   * Anula un recibo de cobro de créditos.
+   * Llama a POST /api/anulacion/cobro-credito
+   */
+  anularCobroCredito: async (data: AnularCobroCreditoRequest): Promise<any> => {
+    const response = await axios.post(`${API_BASE_URL}/anulacion/cobro-credito`, data);
+    return response.data;
+  },
+
   anularCargaProducto: async (data: AnularCargaProductoRequest): Promise<any> => {
     try {
       const response = await axios.post(`${API_BASE_URL}/anulacion/carga-producto`, data);

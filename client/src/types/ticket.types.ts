@@ -112,6 +112,8 @@ export interface DatosCierreCaja {
     fechaCierre: string;
     montoInicial: number;
     totalVentas: number;
+    totalVentasContado?: number;
+    totalVentasCredito?: number;
     totalCobranza: number;
     totalGastos: number;
     totalMoneda?: number;
@@ -144,6 +146,17 @@ export interface DatosCierreCaja {
   transferencias?: Array<{
     concepto: string;
     monto: number;
+  }>;
+  // Ventas a crédito y cobros de créditos de la caja (migración 004)
+  ventasCredito?: Array<{
+    nroFactura: string;
+    cliente: string;
+    totalVenta: number;
+  }>;
+  cobros?: Array<{
+    nroRecibo: number;
+    cliente: string;
+    totalCobrado: number;
   }>;
 }
 

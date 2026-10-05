@@ -26,6 +26,7 @@ const Auditoria = lazy(() => import('./pages/Auditoria/Auditoria'));
 const Roles = lazy(() => import('./pages/Administracion/Roles'));
 const UsuariosABM = lazy(() => import('./pages/Administracion/UsuariosABM'));
 const TerminalesABM = lazy(() => import('./pages/Administracion/TerminalesABM'));
+const Timbrados = lazy(() => import('./pages/Administracion/Timbrados'));
 const StockInicial = lazy(() => import('./pages/Mercaderia/StockInicial'));
 const CargaProductos = lazy(() => import('./pages/Mercaderia/CargaProductos'));
 const ArqueoCaja = lazy(() => import('./pages/Caja/ArqueoCaja'));
@@ -33,6 +34,7 @@ const ConsultaVentas = lazy(() => import('./pages/Consultas/ConsultaVentas'));
 const ConsultaArqueCaja = lazy(() => import('./pages/Consultas/ConsultaArqueCaja'));
 const ConsultaCargaProductos = lazy(() => import('./pages/Consultas/ConsultaCargaProductos'));
 const HistorialCliente = lazy(() => import('./pages/Consultas/HistorialCliente'));
+const ConsultaCobranzas = lazy(() => import('./pages/Consultas/ConsultaCobranzas'));
 const Reportes = lazy(() => import('./pages/Reportes/Reportes'));
 const CrearOferta = lazy(() => import('./pages/Ofertas/CrearOferta'));
 const VerOfertas = lazy(() => import('./pages/Ofertas/VerOfertas'));
@@ -129,12 +131,14 @@ const AppRouter: React.FC = () => {
             <Route path="arqueo-caja" element={conPermiso('RPT_CAJA', <ConsultaArqueCaja />)} />
             <Route path="carga-productos" element={conPermiso('ACCESO_CARGA_PRODUCTOS', <ConsultaCargaProductos />)} />
             <Route path="historial-cliente" element={<HistorialCliente />} />
+            <Route path="cobranzas" element={conPermiso('ACCESO_COBRANZAS', <ConsultaCobranzas />)} />
           </Route>
           <Route path="reportes" element={conPermiso('RPT_CAJA', <Reportes />)} />
           <Route path="administracion">
             <Route path="roles" element={<Roles />} />
             <Route path="usuarios" element={<UsuariosABM />} />
             <Route path="terminales" element={<TerminalesABM />} />
+            <Route path="timbrados" element={<Timbrados />} />
           </Route>
         </Route>
 

@@ -17,7 +17,8 @@ export const crearUsuario = async (req: Request, res: Response) => {
         anularRemision,
         anularRecepcion,
         anularAjuste,
-        anularCargaProducto
+        anularCargaProducto,
+        anularCobro
     } = req.body as CrearUsuarioRequest;
 
     try {
@@ -38,7 +39,8 @@ export const crearUsuario = async (req: Request, res: Response) => {
                 { name: 'anularRemision', type: sql.Bit, value: !!anularRemision },
                 { name: 'anularRecepcion', type: sql.Bit, value: !!anularRecepcion },
                 { name: 'anularAjuste', type: sql.Bit, value: !!anularAjuste },
-                { name: 'anularCargaProducto', type: sql.Bit, value: !!anularCargaProducto }
+                { name: 'anularCargaProducto', type: sql.Bit, value: !!anularCargaProducto },
+                { name: 'anularCobro', type: sql.Bit, value: !!anularCobro }
             ]
         });
 
@@ -60,7 +62,8 @@ export const modificarUsuario = async (req: Request, res: Response) => {
         anularRemision,
         anularRecepcion,
         anularAjuste,
-        anularCargaProducto
+        anularCargaProducto,
+        anularCobro
     } = req.body as ModificarUsuarioRequest;
 
     try {
@@ -84,7 +87,8 @@ export const modificarUsuario = async (req: Request, res: Response) => {
                 { name: 'anularRemision', type: sql.Bit, value: !!anularRemision },
                 { name: 'anularRecepcion', type: sql.Bit, value: !!anularRecepcion },
                 { name: 'anularAjuste', type: sql.Bit, value: !!anularAjuste },
-                { name: 'anularCargaProducto', type: sql.Bit, value: !!anularCargaProducto }
+                { name: 'anularCargaProducto', type: sql.Bit, value: !!anularCargaProducto },
+                { name: 'anularCobro', type: sql.Bit, value: !!anularCobro }
             ]
         });
 

@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react';
 import type { TerminalWeb } from '../../types/terminalWeb.types';
 import { pedidoInternoService } from '../../services/pedidoInterno.service';
 import { remisionService } from '../../services/remision.service';
+import { timbradoService } from '../../services/timbrado.service';
 // import { ventaService } from '../../services/venta.service';
 
 interface TerminalWebFormProps {
@@ -32,14 +33,14 @@ export default function TerminalWebForm({ formData, setFormData, isNewMode }: Te
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [sucursalesData, depositosData] = await Promise.all([
+                const [sucursalesData, depositosData, puntosData] = await Promise.all([
                     pedidoInternoService.consultaSucursales(),
                     remisionService.consultaDeposito(),
-                    // ventaService.obtenerPuntosExpedicion() // TODO: Clarify with user
+                    timbradoService.listar(true),
                 ]);
                 setSucursales(sucursalesData);
                 setDepositos(depositosData);
-                // setPuntosExpedicion(puntosData);
+                setPuntosExpedicion(puntosData);
             } catch (error) {
                 console.error('Error al cargar datos auxiliares:', error);
             } finally {
@@ -120,7 +121,7 @@ export default function TerminalWebForm({ formData, setFormData, isNewMode }: Te
                     >
                         {puntosExpedicion.map((punto) => (
                             <MenuItem key={punto.idFactura} value={punto.idFactura}>
-                                {punto.timbrado} - {punto.puntoExpedicion}
+                                {punto.puntoExpedicion} · Timbrado {punto.timbrado} ({punto.nombreSucursal})
                             </MenuItem>
                         ))}
                     </Select>

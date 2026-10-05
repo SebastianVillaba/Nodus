@@ -1,4 +1,5 @@
 import type { ItemFactura, DatosFactura, ItemTicket, DatosTicket, DatosTicketPedido, DatosCierreCaja, ItemTicketRemision, DatosTicketRemision, DatosTicketPedidosDia } from "../types/ticket.types";
+import type { DatosReciboCobro } from "./cobroCredito.service";
 import type jsPDF from "jspdf";
 
 
@@ -123,8 +124,90 @@ class TicketService {
         this.dibujarTarjetasDebito(doc, datos);
         this.dibujarTarjetasCredito(doc, datos);
         this.dibujarTransferencias(doc, datos);
+        this.dibujarVentasCreditoCierreCaja(doc, datos);
+        this.dibujarCobrosCierreCaja(doc, datos);
         this.dibujarGastosCierreCaja(doc, datos);
         this.dibujarFooterCierreCaja(doc);
+
+        doc.autoPrint();
+        this.imprimirEnIframeOculto(doc);
+    }
+
+    /**
+     * Recibo de cobro de créditos (ticket 80mm).
+     */
+    public async generarTicketReciboCobro(datos: DatosReciboCobro): Promise<void> {
+        const altura = 10 + 6 + 5 * 3 + 5 + 5 * 4 + 5 + 5 + 4 + datos.detalle.length * 8 + 5 + 5 * 3 + 12 + 15;
+        const jsPDFClass = (await import("jspdf")).default;
+        const doc = new jsPDFClass({ orientation: 'portrait', unit: 'mm', format: [this.ANCHO_TICKET, altura] });
+        const centro = this.ANCHO_TICKET / 2;
+        const derecha = this.ANCHO_TICKET - this.MARGEN_IZQ;
+        const c = datos.cabecera;
+
+        this.posY = 10;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(c.nombreFantasia || '', centro, this.posY, { align: 'center' });
+        this.posY += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text(`RUC: ${c.ruc || ''}`, centro, this.posY, { align: 'center' });
+        this.posY += 5;
+        doc.text(c.nombreSucursal || '', centro, this.posY, { align: 'center' });
+        this.posY += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text(`RECIBO DE COBRO Nº ${c.nroRecibo}${c.activo ? '' : ' (ANULADO)'}`, centro, this.posY, { align: 'center' });
+        this.posY += 5;
+        this.dibujarLinea(doc);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text(`Fecha: ${this.formatearFecha(new Date(c.fechaCobro))}`, this.MARGEN_IZQ, this.posY);
+        this.posY += 5;
+        doc.text(`Cliente: ${this.truncarTexto(c.cliente || '', 38)}`, this.MARGEN_IZQ, this.posY);
+        this.posY += 5;
+        doc.text(`RUC/CI: ${c.rucCliente || ''}`, this.MARGEN_IZQ, this.posY);
+        this.posY += 5;
+        doc.text(`Cajero: ${this.truncarTexto(c.cajero || '', 38)}`, this.MARGEN_IZQ, this.posY);
+        this.posY += 5;
+        this.dibujarLinea(doc);
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Factura / Cuota', this.MARGEN_IZQ, this.posY);
+        doc.text('Pagado', derecha, this.posY, { align: 'right' });
+        this.posY += 4;
+        doc.setFont('helvetica', 'normal');
+        datos.detalle.forEach(d => {
+            doc.text(`${d.nroFactura}  Cuota ${d.nroCuota}/${d.cantidadCuotas}`, this.MARGEN_IZQ, this.posY);
+            doc.text(this.formatearNumero(d.monto), derecha, this.posY, { align: 'right' });
+            this.posY += 4;
+            doc.text(`  Saldo de la cuota: ${this.formatearNumero(d.saldoCuota)}`, this.MARGEN_IZQ, this.posY);
+            this.posY += 4;
+        });
+        this.dibujarLinea(doc);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text('TOTAL COBRADO:', this.MARGEN_IZQ, this.posY);
+        doc.text(this.formatearNumero(c.totalCobrado), derecha, this.posY, { align: 'right' });
+        this.posY += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.text(`Son: ${this.truncarTexto((c.totalLetra || '').replace(/\s+/g, ' ').trim(), 55)}`, this.MARGEN_IZQ, this.posY);
+        this.posY += 5;
+        doc.setFontSize(8);
+        doc.text('Saldo pendiente del cliente:', this.MARGEN_IZQ, this.posY);
+        doc.text(this.formatearNumero(c.saldoPendiente), derecha, this.posY, { align: 'right' });
+        this.posY += 5;
+        if (c.observacion) {
+            doc.text(`Obs.: ${this.truncarTexto(c.observacion, 50)}`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+        }
+        this.posY += 7;
+        doc.text('..............................', centro, this.posY, { align: 'center' });
+        this.posY += 4;
+        doc.text('Firma', centro, this.posY, { align: 'center' });
 
         doc.autoPrint();
         this.imprimirEnIframeOculto(doc);
@@ -413,6 +496,10 @@ class TicketService {
 
         this.dibujarFilaResumen(doc, 'Monto Inicial:', datos.resumen.montoInicial);
         this.dibujarFilaResumen(doc, 'Total Ventas:', datos.resumen.totalVentas);
+        if (datos.resumen.totalVentasCredito) {
+            this.dibujarFilaResumen(doc, '  Contado:', datos.resumen.totalVentasContado || 0);
+            this.dibujarFilaResumen(doc, '  Credito:', datos.resumen.totalVentasCredito);
+        }
         this.dibujarFilaResumen(doc, 'Total Cobranza:', datos.resumen.totalCobranza);
         this.dibujarFilaResumen(doc, 'Total Gastos:', datos.resumen.totalGastos);
 
@@ -542,6 +629,45 @@ class TicketService {
         }
     }
 
+    // Tabla de dos columnas (texto / monto) con título, para las secciones del cierre
+    private dibujarSeccionCierre(doc: jsPDF, titulo: string, filas: { texto: string; monto: number }[]): void {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text(titulo, this.ANCHO_TICKET / 2, this.posY, { align: 'center' });
+        this.posY += 5;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        let total = 0;
+        filas.forEach(fila => {
+            doc.text(this.truncarTexto(fila.texto, 30), this.MARGEN_IZQ, this.posY);
+            doc.text(this.formatearNumero(fila.monto || 0), this.ANCHO_TICKET - this.MARGEN_IZQ, this.posY, { align: 'right' });
+            total += fila.monto || 0;
+            this.posY += 4;
+        });
+
+        doc.setFont('helvetica', 'bold');
+        doc.text('Total', this.MARGEN_IZQ, this.posY);
+        doc.text(this.formatearNumero(total), this.ANCHO_TICKET - this.MARGEN_IZQ, this.posY, { align: 'right' });
+        this.posY += 4;
+
+        this.dibujarLinea(doc);
+    }
+
+    private dibujarVentasCreditoCierreCaja(doc: jsPDF, datos: DatosCierreCaja): void {
+        if (datos.ventasCredito && datos.ventasCredito.length > 0) {
+            this.dibujarSeccionCierre(doc, 'VENTAS A CREDITO',
+                datos.ventasCredito.map(v => ({ texto: `${v.nroFactura} ${v.cliente || ''}`, monto: v.totalVenta })));
+        }
+    }
+
+    private dibujarCobrosCierreCaja(doc: jsPDF, datos: DatosCierreCaja): void {
+        if (datos.cobros && datos.cobros.length > 0) {
+            this.dibujarSeccionCierre(doc, 'COBROS DE CREDITOS',
+                datos.cobros.map(c => ({ texto: `Rec. ${c.nroRecibo} ${c.cliente || ''}`, monto: c.totalCobrado })));
+        }
+    }
+
     private dibujarGastosCierreCaja(doc: jsPDF, datos: DatosCierreCaja): void {
         if (datos.gastos && datos.gastos.length > 0) {
             doc.setFont('helvetica', 'bold');
@@ -589,6 +715,11 @@ class TicketService {
         altura += 5; // Total Ventas
         altura += 5; // Total Cobranza
         altura += 5; // Total Gastos
+        if (datos.resumen.totalVentasCredito) altura += 10; // Contado / Crédito
+
+        // Ventas a crédito y cobros: título + filas + total + separador
+        if (datos.ventasCredito && datos.ventasCredito.length > 0) altura += 5 + datos.ventasCredito.length * 4 + 4 + 5;
+        if (datos.cobros && datos.cobros.length > 0) altura += 5 + datos.cobros.length * 4 + 4 + 5;
         
         if (datos.resumen.totalMoneda !== undefined && datos.resumen.totalMoneda !== null) altura += 5;
         if (datos.resumen.totalTarjetaDebito !== undefined && datos.resumen.totalTarjetaDebito !== null) altura += 5;

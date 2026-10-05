@@ -16,6 +16,7 @@ export interface Usuario {
     anularRecepcion?: boolean;
     anularAjuste?: boolean;
     anularCargaProducto?: boolean;
+    anularCobro?: boolean;
 }
 
 export interface UsuarioSearchResult {
