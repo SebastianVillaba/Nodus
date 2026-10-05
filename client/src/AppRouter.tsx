@@ -4,6 +4,7 @@ import SidebarLayout from './components/SideBar/SidebarLayout';
 import { Container, CircularProgress, Box } from '@mui/material';
 import AuthLayout from './Layout/AuthLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import RequirePermission from './components/RequirePermission';
 
 // Lazy loaded page components
 const ABM = lazy(() => import('./pages/ABM'));
@@ -20,8 +21,6 @@ const Remisiones = lazy(() => import('./pages/Remisiones'));
 const RecepcionesPendientes = lazy(() => import('./pages/RecepcionesPendientes'));
 const GenerarPedidoInterno = lazy(() => import('./pages/PedidoInterno/GenerarPedidoInterno'));
 const ConsultaPedidoInterno = lazy(() => import('./pages/PedidoInterno/ConsultaPedidoInterno'));
-const PlanillaPacientes = lazy(() => import('./pages/Sanatorio/PlanillaPacientes'));
-const PlanillaFuncionarios = lazy(() => import('./pages/Sanatorio/PlanillaFuncionarios'));
 const Ajustes = lazy(() => import('./pages/Mercaderia/Ajustes'));
 const Auditoria = lazy(() => import('./pages/Auditoria/Auditoria'));
 const Roles = lazy(() => import('./pages/Administracion/Roles'));
@@ -47,6 +46,11 @@ const ClientesABM = () => <Container><h3>Submenú Clientes (ABM)</h3></Container
 const FacturacionClientes = () => <Container><h3>Submenú Facturación (Clientes)</h3></Container>;
 
 // Loader component for suspense fallback
+// Pantallas que no validan permiso por sí mismas
+const conPermiso = (permiso: string, page: React.ReactNode) => (
+  <RequirePermission permission={permiso}>{page}</RequirePermission>
+);
+
 const PageLoader = () => (
   <Box
     sx={{
@@ -84,8 +88,8 @@ const AppRouter: React.FC = () => {
         >
           <Route index element={<h2>Bienvenido al Sistema</h2>} />
           <Route path="abm" element={<ABM />}>
-            <Route path="personas" element={<PersonasABM />} />
-            <Route path="productos" element={<ProductosABM />} />
+            <Route path="personas" element={conPermiso('ACCESO_ABM', <PersonasABM />)} />
+            <Route path="productos" element={conPermiso('ACCESO_ABM', <ProductosABM />)} />
             <Route path="clientes" element={<ClientesABM />} />
           </Route>
           <Route path="clientes" element={<Clientes />}>
@@ -94,7 +98,7 @@ const AppRouter: React.FC = () => {
           <Route path="facturacion" element={<Facturacion />} />
           <Route path="pedidos" element={<Pedidos />} />
           <Route path="cobranzas">
-            <Route path="precobranza" element={<Precobranza />} />
+            <Route path="precobranza" element={conPermiso('ACCESO_PEDIDOS', <Precobranza />)} />
             <Route path="cobranza" element={<Cobranza />} />
           </Route>
           <Route path="caja">
@@ -104,8 +108,8 @@ const AppRouter: React.FC = () => {
           <Route path="remisiones" element={<Remisiones />} />
           <Route path="recepciones-pendientes" element={<RecepcionesPendientes />} />
           <Route path="pedido-interno">
-            <Route path="generar" element={<GenerarPedidoInterno />} />
-            <Route path="consulta" element={<ConsultaPedidoInterno />} />
+            <Route path="generar" element={conPermiso('ACCESO_REMISIONES', <GenerarPedidoInterno />)} />
+            <Route path="consulta" element={conPermiso('ACCESO_REMISIONES', <ConsultaPedidoInterno />)} />
           </Route>
           <Route path="mercaderia">
             <Route path="ajustes" element={<Ajustes />} />
@@ -115,22 +119,18 @@ const AppRouter: React.FC = () => {
             <Route path="generacion-codigo-barra" element={<GeneracionCodigoBarra />} />
             <Route path="impresion-codigo-barra" element={<ImpresionCodigoBarra />} />
           </Route>
-          <Route path="sanatorio">
-            <Route path="pacientes" element={<PlanillaPacientes />} />
-            <Route path="funcionarios" element={<PlanillaFuncionarios />} />
-          </Route>
           <Route path="oferta">
             <Route path="crear" element={<CrearOferta />} />
             <Route path="ver" element={<VerOfertas />} />
           </Route>
-          <Route path="auditoria" element={<Auditoria />} />
+          <Route path="auditoria" element={conPermiso('ACCESO_AUDITORIA', <Auditoria />)} />
           <Route path="consultas">
-            <Route path="ventas" element={<ConsultaVentas />} />
-            <Route path="arqueo-caja" element={<ConsultaArqueCaja />} />
-            <Route path="carga-productos" element={<ConsultaCargaProductos />} />
+            <Route path="ventas" element={conPermiso('ACCESO_VENTAS', <ConsultaVentas />)} />
+            <Route path="arqueo-caja" element={conPermiso('RPT_CAJA', <ConsultaArqueCaja />)} />
+            <Route path="carga-productos" element={conPermiso('ACCESO_CARGA_PRODUCTOS', <ConsultaCargaProductos />)} />
             <Route path="historial-cliente" element={<HistorialCliente />} />
           </Route>
-          <Route path="reportes" element={<Reportes />} />
+          <Route path="reportes" element={conPermiso('RPT_CAJA', <Reportes />)} />
           <Route path="administracion">
             <Route path="roles" element={<Roles />} />
             <Route path="usuarios" element={<UsuariosABM />} />
@@ -145,4 +145,4 @@ const AppRouter: React.FC = () => {
   );
 };
 
-export default AppRouter;
+export default AppRouter;

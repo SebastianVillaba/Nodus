@@ -1,4 +1,4 @@
-name: Deploy Sistema Aura Chic
+name: Deploy Sistema Nodus
 
 on:
   push:
@@ -19,9 +19,9 @@ jobs:
         shell: powershell
         run: |
           # Verifica si el servicio existe y está corriendo antes de intentar apagarlo
-          $service = Get-Service -Name "AuraChic" -ErrorAction SilentlyContinue
+          $service = Get-Service -Name "Nodus" -ErrorAction SilentlyContinue
           if ($service -and $service.Status -eq 'Running') {
-              Stop-Service -Name "AuraChic" -Force
+              Stop-Service -Name "Nodus" -Force
           }
 
       - name: Instalar y Compilar Frontend
@@ -39,4 +39,4 @@ jobs:
       - name: Iniciar Servicio de Windows (NSSM con código nuevo)
         shell: powershell
         run: |
-          Start-Service -Name "AuraChic"
+          Start-Service -Name "Nodus"

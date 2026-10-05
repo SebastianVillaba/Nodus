@@ -15,7 +15,6 @@ import UppercaseTextField from './UppercaseTextField';
 import { anulacionService } from '../services/anulacion.service';
 import useTerminal from '../hooks/useTerminal';
 import BlockIcon from '@mui/icons-material/Block';
-import axios from 'axios';
 
 interface AnulacionModalProps {
   open: boolean;
@@ -89,65 +88,37 @@ const AnulacionModal: React.FC<AnulacionModalProps> = ({
         throw new Error('La terminal o sucursal no están configuradas correctamente.');
       }
 
-      // 1. Validar usuario y contraseña (misma validación que el login)
-      const loginResponse = await axios.post('/api/auth/login', {
-        username: username.trim(),
-        password: password,
-      });
-
-      if (!loginResponse.data.success || !loginResponse.data.user) {
-        throw new Error(loginResponse.data.message || 'Usuario o contraseña incorrectos.');
-      }
-
-      const idUsuario = loginResponse.data.user.idUsuario;
+      // El servidor valida las credenciales del autorizador y su permiso de anulación
+      const autorizador = {
+        usuarioAutorizador: username.trim(),
+        passwordAutorizador: password,
+      };
 
       if (tipoMovimiento === 'CARGA') {
         if (!idCargaProducto) {
           throw new Error('ID de Carga de Producto no especificado.');
         }
 
-        // 2. Validar permiso de anulación para Carga (sp_permisoAnular tipo 'CARGA')
-        const tienePermiso = await anulacionService.verificarPermisoAnular(idUsuario, 'CARGA');
-        if (!tienePermiso) {
-          setError('El usuario ingresado no está validado para realizar anulaciones de carga de producto.');
-          setLoading(false);
-          return;
-        }
-
-        // 3. Proceder con la anulación de la carga de producto
         await anulacionService.anularCargaProducto({
           idCargaProducto,
           idTerminalWeb,
           idSucursal,
-          idUsuarioAlta: idUsuario,
           explica: reason.trim(),
+          ...autorizador,
         });
       } else {
         if (!idVenta) {
           throw new Error('ID de Venta no especificado.');
         }
 
-        // 2. Validar permiso de anulación para Venta (FACT si imp=true, REMISION si imp=false)
-        const permTipo = imp ? 'FACT' : 'REMISION';
-        const tienePermiso = await anulacionService.verificarPermisoAnular(idUsuario, permTipo);
-
-        if (!tienePermiso) {
-          setError('El usuario ingresado no está validado para realizar anulaciones.');
-          setLoading(false);
-          return;
-        }
-
-        // 3. Determinar tipo de anulación (1 = Factura impresa, 2 = Remito/CVE)
-        const tipoAnulacion = imp ? 1 : 2;
-
-        // 4. Proceder con la anulación de facturación
+        // Tipo de anulación: 1 = Factura impresa, 2 = Remito/CVE
         await anulacionService.anularFacturacion({
           idVenta,
           idTerminalWeb,
           idSucursal,
-          idUsuarioAlta: idUsuario,
           explica: reason.trim(),
-          tipo: tipoAnulacion,
+          tipo: imp ? 1 : 2,
+          ...autorizador,
         });
       }
 

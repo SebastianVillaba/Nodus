@@ -33,8 +33,6 @@ export default function LoginPage(): JSX.Element {
         password: password
       });
 
-      console.log('Login response:', response.data);
-
       if (response.data.success == true) {
         // Guardar token si existe
         if (response.data.token) {

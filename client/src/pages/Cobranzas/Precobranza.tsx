@@ -40,15 +40,16 @@ export default function Precobranza() {
     // Cargar deliveries al montar
     useEffect(() => {
         const loadDeliveries = async () => {
+            if (!idTerminalWeb) return;
             try {
-                const data = await deliveryService.getDeliveryActivo();
+                const data = await deliveryService.getDeliveryActivo(idTerminalWeb);
                 setDeliveries(data);
             } catch (error) {
                 console.error('Error loading deliveries:', error);
             }
         };
         loadDeliveries();
-    }, []);
+    }, [idTerminalWeb]);
 
     // Cargar detalle temporal al montar o cambiar terminal
     const loadDetalleTmp = useCallback(async () => {

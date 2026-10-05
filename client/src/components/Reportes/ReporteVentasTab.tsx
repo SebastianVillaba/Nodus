@@ -119,7 +119,9 @@ export const ReporteVentasTab = () => {
   };
 
   // Manejar descarga en PDF
-  const handleDescargarPDF = () => {
+  const handleDescargarPDF = async () => {
+    // Abrir la ventana antes del await para que el navegador no la bloquee como popup
+    const ventana = window.open('', '_blank');
     try {
       let endpoint = "";
       if (reporteSeleccionado === "resumido") {
@@ -131,8 +133,16 @@ export const ReporteVentasTab = () => {
         endpoint = `${API_URL}/reporte/venta-producto-dia?desde=${desde}&hasta=${hasta}&idTipoProducto=${idTipoProducto}&format=pdf`;
       }
       
-      window.open(endpoint, '_blank');
+      // Se descarga con axios para que viaje el token de sesión
+      const response = await axios.get(endpoint, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      if (ventana) {
+        ventana.location.href = url;
+      } else {
+        window.open(url, '_blank');
+      }
     } catch (err) {
+      ventana?.close();
       console.error("Error al descargar PDF:", err);
       alert("Error al descargar el PDF");
     }

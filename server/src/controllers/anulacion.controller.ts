@@ -1,6 +1,47 @@
 import { Request, Response } from 'express';
 import { executeRequest, sql } from '../utils/dbHandler';
 import { sendError } from '../utils/errorResponse';
+import { validarCredenciales } from './auth.controller';
+
+const tienePermisoAnular = async (idUsuario: number, tipo: string): Promise<boolean> => {
+  const result = await executeRequest({
+    query: 'sp_permisoAnular',
+    inputs: [
+      { name: 'idUsuario', type: sql.Int, value: idUsuario },
+      { name: 'tipo', type: sql.VarChar(15), value: tipo }
+    ] as any,
+    isStoredProcedure: true
+  });
+  // El SP retorna una fila con idUsuario si tiene permiso, o sin filas si no lo tiene
+  return !!result.recordset && result.recordset.length > 0;
+};
+
+/**
+ * Valida en el servidor las credenciales del usuario autorizador y su permiso de anulación.
+ * Devuelve su idUsuario, o null si ya respondió con el error correspondiente.
+ */
+const obtenerAutorizador = async (req: Request, res: Response, tipo: string): Promise<number | null> => {
+  const { usuarioAutorizador, passwordAutorizador } = req.body;
+
+  if (typeof usuarioAutorizador !== 'string' || typeof passwordAutorizador !== 'string'
+    || !usuarioAutorizador || !passwordAutorizador) {
+    res.status(400).json({ success: false, message: 'Debe ingresar usuario y contraseña del autorizador' });
+    return null;
+  }
+
+  const autorizador = await validarCredenciales(usuarioAutorizador, passwordAutorizador);
+  if (!autorizador) {
+    res.status(401).json({ success: false, message: 'Usuario o contraseña del autorizador incorrectos' });
+    return null;
+  }
+
+  if (!(await tienePermisoAnular(autorizador.idUsuario, tipo))) {
+    res.status(403).json({ success: false, message: 'El usuario ingresado no está habilitado para realizar esta anulación' });
+    return null;
+  }
+
+  return autorizador.idUsuario;
+};
 
 /**
  * Verifica si un usuario tiene permiso para anular según el tipo indicado.
@@ -29,17 +70,7 @@ export const verificarPermisoAnular = async (req: Request, res: Response): Promi
       return;
     }
 
-    const result = await executeRequest({
-      query: 'sp_permisoAnular',
-      inputs: [
-        { name: 'idUsuario', type: sql.Int, value: parseInt(idUsuario) },
-        { name: 'tipo', type: sql.VarChar(15), value: tipo.toUpperCase() }
-      ] as any,
-      isStoredProcedure: true
-    });
-
-    // El SP retorna una fila con idUsuario si tiene permiso, o sin filas si no lo tiene
-    const tienePermiso = result.recordset && result.recordset.length > 0;
+    const tienePermiso = await tienePermisoAnular(parseInt(idUsuario), tipo.toUpperCase());
 
     res.status(200).json({
       success: true,
@@ -55,7 +86,7 @@ export const verificarPermisoAnular = async (req: Request, res: Response): Promi
  * Anula una facturación (venta).
  * Llama a sp_anularFacturacion.
  * 
- * Body: { idVenta, idTerminalWeb, idSucursal, idUsuarioAlta, explica, tipo }
+ * Body: { idVenta, idTerminalWeb, idSucursal, explica, tipo, usuarioAutorizador, passwordAutorizador }
  *   tipo = 1 (Factura impresa) | 2 (Remito/CVE)
  */
 export const anularFacturacion = async (req: Request, res: Response): Promise<void> => {
@@ -64,16 +95,15 @@ export const anularFacturacion = async (req: Request, res: Response): Promise<vo
       idVenta,
       idTerminalWeb,
       idSucursal,
-      idUsuarioAlta,
       explica,
       tipo
     } = req.body;
 
     // Validar parámetros obligatorios
-    if (!idVenta || !idTerminalWeb || !idSucursal || !idUsuarioAlta || !explica || tipo === undefined) {
+    if (!idVenta || !idTerminalWeb || !idSucursal || !explica || tipo === undefined) {
       res.status(400).json({
         success: false,
-        message: "Faltan parámetros requeridos: idVenta, idTerminalWeb, idSucursal, idUsuarioAlta, explica, tipo"
+        message: "Faltan parámetros requeridos: idVenta, idTerminalWeb, idSucursal, explica, tipo"
       });
       return;
     }
@@ -85,6 +115,10 @@ export const anularFacturacion = async (req: Request, res: Response): Promise<vo
       });
       return;
     }
+
+    // tipo 1 = factura impresa (permiso FACT), 2 = remito (permiso REMISION)
+    const idUsuarioAlta = await obtenerAutorizador(req, res, tipo === 1 ? 'FACT' : 'REMISION');
+    if (idUsuarioAlta === null) return;
 
     await executeRequest({
       query: 'sp_anularFacturacion',
@@ -113,7 +147,7 @@ export const anularFacturacion = async (req: Request, res: Response): Promise<vo
  * Anula una carga de productos.
  * Llama a sp_anularCargaProducto.
  * 
- * Body: { idCargaProducto, idTerminalWeb, idSucursal, idUsuarioAlta, explica }
+ * Body: { idCargaProducto, idTerminalWeb, idSucursal, explica, usuarioAutorizador, passwordAutorizador }
  */
 export const anularCargaProducto = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -121,17 +155,19 @@ export const anularCargaProducto = async (req: Request, res: Response): Promise<
       idCargaProducto,
       idTerminalWeb,
       idSucursal,
-      idUsuarioAlta,
       explica
     } = req.body;
 
-    if (!idCargaProducto || !idTerminalWeb || !idSucursal || !idUsuarioAlta || !explica) {
+    if (!idCargaProducto || !idTerminalWeb || !idSucursal || !explica) {
       res.status(400).json({
         success: false,
-        message: "Faltan parámetros requeridos: idCargaProducto, idTerminalWeb, idSucursal, idUsuarioAlta, explica"
+        message: "Faltan parámetros requeridos: idCargaProducto, idTerminalWeb, idSucursal, explica"
       });
       return;
     }
+
+    const idUsuarioAlta = await obtenerAutorizador(req, res, 'CARGA');
+    if (idUsuarioAlta === null) return;
 
     await executeRequest({
       query: 'sp_anularCargaProducto',

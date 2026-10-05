@@ -3,6 +3,7 @@ import { executeRequest, sql } from '../utils/dbHandler';
 import { sendError } from '../utils/errorResponse';
 import { CrearUsuarioRequest, ModificarUsuarioRequest } from '../types/usuario.type';
 import bcrypt from 'bcryptjs';
+import { validarCredenciales } from './auth.controller';
 
 export const crearUsuario = async (req: Request, res: Response) => {
     const { 
@@ -152,31 +153,18 @@ export const buscarPersonaParaUsuario = async (req: Request, res: Response) => {
 };
 
 export const validarVendedor = async (req: Request, res: Response): Promise<void> => {
-    const { password } = req.body;
+    const { username, password } = req.body;
 
-    if (!password) {
-        res.status(400).json({ success: false, message: 'La contraseña es obligatoria' });
+    if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
+        res.status(400).json({ success: false, message: 'El usuario y la contraseña son obligatorios' });
         return;
     }
 
     try {
-        // Query active users to verify password in-memory (bcrypt compare)
-        const result = await executeRequest({
-            query: 'SELECT idUsuario, username, password FROM usuario WHERE activo = 1',
-            isStoredProcedure: false
-        });
-
-        let matchedUser = null;
-        for (const user of result.recordset) {
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (isMatch) {
-                matchedUser = user;
-                break;
-            }
-        }
+        const matchedUser = await validarCredenciales(username, password);
 
         if (!matchedUser) {
-            res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
+            res.status(401).json({ success: false, message: 'Usuario o contraseña incorrectos' });
             return;
         }
 

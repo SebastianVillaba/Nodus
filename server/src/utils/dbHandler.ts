@@ -25,7 +25,7 @@ console.log(`🗄️  Conectando a DB Server: ${process.env.DB_SERVER || 'localh
 
 const config: SqlConfig = {
   server: process.env.DB_SERVER || "localhost",
-  database: process.env.DB_NAME || "curcuma",
+  database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   options: {
@@ -34,10 +34,6 @@ const config: SqlConfig = {
   },
 };
 
-console.log(process.env.DB_SERVER);
-console.log(process.env.DB_NAME);
-console.log(process.env.DB_USER);
-console.log(process.env.DB_PASSWORD);
 
 
 // Aceptar tanto instancias de tipo (ISqlType) como fábricas (sql.Int, sql.VarChar, etc.)

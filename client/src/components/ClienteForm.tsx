@@ -21,6 +21,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import { personaService } from '../services/persona.service';
 import { ubicacionService } from '../services/ubicacion.service';
 import type { Departamento, Distrito, Ciudad } from '../types/ubicacion.types';
+import { esDepartamentoPorDefecto, esDistritoPorDefecto, esCiudadPorDefecto } from '../config/ubicacionDefecto';
 
 interface ClienteData {
   idPersona?: number;
@@ -108,10 +109,10 @@ const ClienteForm: React.FC<ClienteFormProps> = ({ open, onClose, onClienteSelec
       const data = await ubicacionService.obtenerDepartamentos();
       setDepartamentos(data);
 
-      // Establecer Itapúa por defecto
-      const itapua = data.find(d => d.nombre.toUpperCase().includes('GUAIR'));
-      if (itapua) {
-        setIdDepartamento(itapua.idDepartamento);
+      // Preseleccionar la ubicación configurada por defecto
+      const depDefecto = data.find(d => esDepartamentoPorDefecto(d.nombre));
+      if (depDefecto) {
+        setIdDepartamento(depDefecto.idDepartamento);
       }
     } catch (error) {
       console.error('Error al cargar departamentos:', error);
@@ -123,10 +124,10 @@ const ClienteForm: React.FC<ClienteFormProps> = ({ open, onClose, onClienteSelec
       const data = await ubicacionService.obtenerDistritosPorDepartamento(idDep);
       setDistritos(data);
 
-      // Establecer Encarnación por defecto
-      const encarnacion = data.find(d => d.nombre.toUpperCase().includes('VILLAR'));
-      if (encarnacion) {
-        setIdDistrito(encarnacion.idDistrito);
+      // Preseleccionar la ubicación configurada por defecto
+      const ubicDefecto = data.find(d => esDistritoPorDefecto(d.nombre));
+      if (ubicDefecto) {
+        setIdDistrito(ubicDefecto.idDistrito);
       }
     } catch (error) {
       console.error('Error al cargar distritos:', error);
@@ -138,10 +139,10 @@ const ClienteForm: React.FC<ClienteFormProps> = ({ open, onClose, onClienteSelec
       const data = await ubicacionService.obtenerCiudadesPorDistrito(idDist);
       setCiudades(data);
 
-      // Establecer Villarica por defecto
-      const encarnacion = data.find(c => c.nombreCiudad.toUpperCase().includes('VILLAR'));
-      if (encarnacion) {
-        setIdCiudad(encarnacion.idCiudad.toString());
+      // Preseleccionar la ubicación configurada por defecto
+      const ubicDefecto = data.find(c => esCiudadPorDefecto(c.nombreCiudad));
+      if (ubicDefecto) {
+        setIdCiudad(ubicDefecto.idCiudad.toString());
       }
     } catch (error) {
       console.error('Error al cargar ciudades:', error);

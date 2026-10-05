@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { executeRequest, sql } from '../utils/dbHandler';
+import { getUserId } from '../Middlewares/auth.middleware';
 import { sendError } from '../utils/errorResponse';
 
 export const agregarAlTemp = async (req: Request, res: Response): Promise<void> => {
@@ -124,7 +125,7 @@ export const limpiarTemp = async (req: Request, res: Response): Promise<void> =>
 };
 
 export const guardarCodigosGenerados = async (req: Request, res: Response): Promise<void> => {
-  const { items, idUsuarioMod } = req.body;
+  const { items } = req.body;
 
   if (!items || !Array.isArray(items)) {
     res.status(400).json({ success: false, message: 'Faltan parámetros obligatorios: items (debe ser un array)' });
@@ -143,7 +144,7 @@ export const guardarCodigosGenerados = async (req: Request, res: Response): Prom
         inputs: [
           { name: 'idProducto', type: sql.Int, value: idProducto },
           { name: 'codigoBarra', type: sql.VarChar(30), value: codigoBarra },
-          { name: 'idUsuarioMod', type: sql.Int, value: idUsuarioMod || 1 }
+          { name: 'idUsuarioMod', type: sql.Int, value: getUserId(req) }
         ]
       });
     }

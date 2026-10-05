@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import authRoutes from './auth.routes';
-import userRoutes from './user.routes';
 import personaRoutes from './persona.routes';
 import productoRoutes from './producto.routes';
 import ubicacionRoutes from './ubicacion.routes';
@@ -13,7 +12,6 @@ import pedidoInternoRoutes from './pedidoInterno.routes';
 import deliveryRoutes from './delivery.routes';
 import precobranzaRoutes from './precobranza.routes';
 import comprasRoutes from './compras.routes';
-import planillasRoutes from './planillas.routes'
 import sectorRoutes from './sector.routes';
 import remisionRoutes from './remision.routes';
 import ajustesRoutes from './ajustes.routes';
@@ -32,41 +30,54 @@ import cargaProductosRoutes from './cargaProductos.routes';
 import barcodeRoutes from './barcode.routes';
 import consultaCargaProductosRoutes from './consultaCargaProductos.routes';
 import historialClienteRoutes from './historialCliente.routes';
+import { verifyToken, forzarUsuarioAutenticado } from '../Middlewares/auth.middleware';
+import { requierePermiso, requierePermisoEscritura, PERMISOS } from '../Middlewares/permisos.middleware';
 
 const router = Router();
 
+// Rutas públicas: login y validación de la terminal (se usan antes de iniciar sesión)
 router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
-router.use('/persona', personaRoutes);
-router.use('/producto', productoRoutes);
-router.use('/caja', cajaRoutes);
-router.use('/ubicaciones', ubicacionRoutes);
-router.use('/venta', ventaRoutes);
-router.use('/pedido', pedidoRoutes);
-router.use('/reporte', reporteRoutes);
 router.use('/terminal', terminalRoutes);
+
+// Todo lo que sigue requiere un token válido
+router.use(verifyToken);
+
+// En el ABM de usuarios idUsuario es el usuario editado, no quien opera
+router.use('/usuario', forzarUsuarioAutenticado(['idUsuario']), usuarioRoutes);
+
+router.use(forzarUsuarioAutenticado());
+
+// Permisos: las escrituras de cada módulo exigen su permiso; las lecturas quedan abiertas
+// porque otras pantallas las usan como catálogo. Seguridad, auditoría e historial exigen
+// permiso también para leer. /persona, /usuario y /rol definen sus permisos por ruta.
+
+router.use('/persona', personaRoutes);
+router.use('/producto', requierePermisoEscritura(PERMISOS.ABM), productoRoutes);
+router.use('/caja', requierePermisoEscritura(PERMISOS.CAJA), cajaRoutes);
+router.use('/ubicaciones', ubicacionRoutes);
+router.use('/venta', requierePermisoEscritura(PERMISOS.VENTAS), ventaRoutes);
+router.use('/pedido', requierePermisoEscritura(PERMISOS.PEDIDOS), pedidoRoutes);
+router.use('/reporte', reporteRoutes);
 router.use('/delivery', deliveryRoutes);
 router.use('/denominacion', denominacionRoutes);
-router.use('/precobranza', precobranzaRoutes);
-router.use('/compras', comprasRoutes);
-router.use('/remisiones', remisionRoutes);
-router.use('/pedido-interno', pedidoInternoRoutes);
-router.use('/planillas', planillasRoutes);
+router.use('/precobranza', requierePermisoEscritura(PERMISOS.PEDIDOS), precobranzaRoutes);
+router.use('/compras', requierePermisoEscritura(PERMISOS.COMPRAS), comprasRoutes);
+router.use('/remisiones', requierePermisoEscritura(PERMISOS.REMISIONES), remisionRoutes);
+router.use('/pedido-interno', requierePermisoEscritura(PERMISOS.REMISIONES), pedidoInternoRoutes);
 router.use('/sector', sectorRoutes);
-router.use('/ajustes', ajustesRoutes);
+router.use('/ajustes', requierePermisoEscritura(PERMISOS.AJUSTES), ajustesRoutes);
 router.use('/impuesto', impuestoRoutes);
-router.use('/auditoria', auditoriaRoutes);
+router.use('/auditoria', requierePermiso(PERMISOS.AUDITORIA), auditoriaRoutes);
 router.use('/rol', rolRoutes);
-router.use('/usuario', usuarioRoutes);
-router.use('/terminal-web', terminalWebRoutes);
-router.use('/stock-inicial', stockInicialRoutes);
+router.use('/terminal-web', requierePermiso(PERMISOS.SEGURIDAD), terminalWebRoutes);
+router.use('/stock-inicial', requierePermisoEscritura(PERMISOS.AJUSTES), stockInicialRoutes);
 router.use('/anulacion', anulacionRoutes);
 router.use('/consulta-venta', consultaVentaRoutes);
 router.use('/consulta-arqueo', consultaArqueoRoutes);
-router.use('/ofertas', ofertaRoutes);
-router.use('/carga-productos', cargaProductosRoutes);
-router.use('/barcode', barcodeRoutes);
+router.use('/ofertas', requierePermisoEscritura(PERMISOS.OFERTAS), ofertaRoutes);
+router.use('/carga-productos', requierePermisoEscritura(PERMISOS.CARGA_PRODUCTOS), cargaProductosRoutes);
+router.use('/barcode', requierePermisoEscritura(PERMISOS.CARGA_PRODUCTOS, PERMISOS.VER_STOCK), barcodeRoutes);
 router.use('/consulta-carga-productos', consultaCargaProductosRoutes);
-router.use('/historial-cliente', historialClienteRoutes);
+router.use('/historial-cliente', requierePermiso(PERMISOS.HISTORIAL_CLIENTE), historialClienteRoutes);
 
 export default router;

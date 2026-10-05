@@ -14,6 +14,24 @@ import TextField from './UppercaseTextField';
 import { usuarioService } from '../services/usuario.service';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 
+const ULTIMO_VENDEDOR_KEY = 'ultimoVendedor';
+
+const leerUltimoVendedor = (): string => {
+  try {
+    return localStorage.getItem(ULTIMO_VENDEDOR_KEY) || '';
+  } catch {
+    return '';
+  }
+};
+
+const guardarUltimoVendedor = (username: string): void => {
+  try {
+    localStorage.setItem(ULTIMO_VENDEDOR_KEY, username);
+  } catch {
+    // sin localStorage solo se pierde la sugerencia
+  }
+};
+
 interface VendedorValidationModalProps {
   open: boolean;
   onClose: () => void;
@@ -25,26 +43,34 @@ const VendedorValidationModal: React.FC<VendedorValidationModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const usernameRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Reset state when opening modal
   useEffect(() => {
     if (open) {
+      // Se sugiere el último vendedor que validó en esta terminal; normalmente solo falta la contraseña
+      const ultimo = leerUltimoVendedor();
+      setUsername(ultimo);
       setPassword('');
       setError('');
       setLoading(false);
       setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
+        (ultimo ? inputRef.current : usernameRef.current)?.focus();
       }, 100);
     }
   }, [open]);
 
   const handleAuthenticate = async () => {
+    if (!username.trim()) {
+      setError('Por favor ingrese el usuario.');
+      usernameRef.current?.focus();
+      return;
+    }
     if (!password) {
       setError('Por favor ingrese la contraseña.');
       return;
@@ -54,9 +80,10 @@ const VendedorValidationModal: React.FC<VendedorValidationModalProps> = ({
     setError('');
 
     try {
-      const response = await usuarioService.validarVendedor(password);
-      
+      const response = await usuarioService.validarVendedor(username.trim(), password);
+
       if (response.success && response.result) {
+        guardarUltimoVendedor(username.trim());
         onSuccess(response.result.idVendedor, response.result.nombre);
       } else {
         setError(response.message || 'Error de autenticación.');
@@ -105,6 +132,21 @@ const VendedorValidationModal: React.FC<VendedorValidationModalProps> = ({
               {error}
             </Alert>
           )}
+
+          <TextField
+            fullWidth
+            label="Usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                inputRef.current?.focus();
+              }
+            }}
+            inputRef={usernameRef}
+            disabled={loading}
+            autoComplete="username"
+          />
 
           <TextField
             fullWidth

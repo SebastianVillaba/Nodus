@@ -15,6 +15,7 @@ import type { Persona } from '../../types/persona.types';
 import type { Departamento, Distrito, Ciudad } from '../../types/ubicacion.types';
 import { TipoPersonaForm } from './TipoPersonaForm';
 import { ubicacionService } from '../../services/ubicacion.service';
+import { esDepartamentoPorDefecto, esDistritoPorDefecto, esCiudadPorDefecto } from '../../config/ubicacionDefecto';
 
 interface PersonaFormProps {
   formData: Persona;
@@ -56,13 +57,13 @@ export default function PersonaForm({ formData, setFormData }: PersonaFormProps)
 
         // Establecer valores por defecto solo si es un nuevo registro
         if (!formData.idPersona && !valoresPorDefectoCargados) {
-          // Buscar Itapúa en los departamentos
-          const itapua = data.find(d => d.nombre.toUpperCase().includes('GUAIRA'));
-          if (itapua) {
+          // Buscar el departamento configurado por defecto
+          const depDefecto = data.find(d => esDepartamentoPorDefecto(d.nombre));
+          if (depDefecto) {
             setFormData(prev => ({
               ...prev,
               pais: 'PARAGUAY',
-              idDepartamento: itapua.idDepartamento
+              idDepartamento: depDefecto.idDepartamento
             }));
           }
           setValoresPorDefectoCargados(true);
@@ -85,13 +86,13 @@ export default function PersonaForm({ formData, setFormData }: PersonaFormProps)
           const data = await ubicacionService.obtenerDistritosPorDepartamento(formData.idDepartamento);
           setDistritos(data);
 
-          // Establecer Encarnación por defecto solo si es un nuevo registro y no tiene distrito
+          // Preseleccionar la ubicación configurada por defecto solo si es un nuevo registro y no tiene distrito
           if (!formData.idPersona && !formData.idDistrito && valoresPorDefectoCargados) {
-            const encarnacion = data.find(d => d.nombre.toUpperCase().includes('VILLARI'));
-            if (encarnacion) {
+            const ubicDefecto = data.find(d => esDistritoPorDefecto(d.nombre));
+            if (ubicDefecto) {
               setFormData(prev => ({
                 ...prev,
-                idDistrito: encarnacion.idDistrito
+                idDistrito: ubicDefecto.idDistrito
               }));
             }
           }
@@ -117,13 +118,13 @@ export default function PersonaForm({ formData, setFormData }: PersonaFormProps)
           const data = await ubicacionService.obtenerCiudadesPorDistrito(formData.idDistrito);
           setCiudades(data);
 
-          // Establecer Encarnación por defecto solo si es un nuevo registro y no tiene ciudad
+          // Preseleccionar la ubicación configurada por defecto solo si es un nuevo registro y no tiene ciudad
           if (!formData.idPersona && !formData.idCiudad && valoresPorDefectoCargados) {
-            const encarnacion = data.find(c => c.nombreCiudad.toUpperCase().includes('VILLARI'));
-            if (encarnacion) {
+            const ubicDefecto = data.find(c => esCiudadPorDefecto(c.nombreCiudad));
+            if (ubicDefecto) {
               setFormData(prev => ({
                 ...prev,
-                idCiudad: encarnacion.idCiudad.toString()
+                idCiudad: ubicDefecto.idCiudad.toString()
               }));
             }
           }

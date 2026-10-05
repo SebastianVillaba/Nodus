@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { logger } from './logger';
+import { env } from '../config/env';
 
 /**
  * Arma el texto del error de SQL Server incluyendo el SP y la línea cuando vienen.
@@ -16,10 +17,12 @@ export const formatDbError = (error: any): string => {
 };
 
 /**
- * Responde un error uniforme al cliente con el detalle real de la base de datos.
+ * Responde un error uniforme al cliente.
  *
  * - RAISERROR/THROW de negocio (number >= 50000): 400 con el mensaje del SP tal cual.
- * - Otro error SQL o de código: statusDefault (500) con "contexto: detalle (SP, línea N)".
+ * - Otro error SQL o de código: statusDefault (500).
+ *   En desarrollo se devuelve el detalle real ("contexto: detalle (SP, línea N)");
+ *   en producción solo el contexto, para no exponer la estructura de la base. El detalle queda en el log.
  */
 export const sendError = (res: Response, error: any, contexto: string, statusDefault = 500): void => {
   logger.error({ err: error }, contexto);
@@ -27,11 +30,20 @@ export const sendError = (res: Response, error: any, contexto: string, statusDef
   if (res.headersSent) return;
 
   const esNegocio = typeof error?.number === 'number' && error.number >= 50000;
-  const detalle = formatDbError(error);
 
-  res.status(esNegocio ? 400 : statusDefault).json({
+  if (esNegocio) {
+    res.status(400).json({ success: false, message: error.message });
+    return;
+  }
+
+  if (env.NODE_ENV === 'production') {
+    res.status(statusDefault).json({ success: false, message: contexto });
+    return;
+  }
+
+  res.status(statusDefault).json({
     success: false,
-    message: esNegocio ? error.message : `${contexto}: ${detalle}`,
+    message: `${contexto}: ${formatDbError(error)}`,
     error: error?.message || 'Error desconocido',
     detail: {
       number: error?.number,

@@ -256,7 +256,8 @@ export const limpiarDetPedidoTmp = async (req: Request, res: Response) => {
     try {
         const { idTerminalWeb } = req.query;
         await executeRequest({
-            query: `delete from detPedidoTmp where idTerminalWeb=${idTerminalWeb}`,
+            query: 'delete from detPedidoTmp where idTerminalWeb = @idTerminalWeb',
+            inputs: [{ name: 'idTerminalWeb', type: sql.Int, value: Number(idTerminalWeb) }],
             isStoredProcedure: false
         });
         res.status(200).json({ message: 'Detalles del pedido eliminados correctamente.' });
@@ -269,7 +270,8 @@ export const anularPedido = async (req: Request, res: Response) => {
     try {
         const { idPedido } = req.params;
         await executeRequest({
-            query: `update pedido set activo=0 where idPedido=${idPedido}`,
+            query: 'update pedido set activo = 0 where idPedido = @idPedido',
+            inputs: [{ name: 'idPedido', type: sql.Int, value: Number(idPedido) }],
             isStoredProcedure: false
         });
         res.status(200).json({ message: 'Pedido anulado correctamente.' });

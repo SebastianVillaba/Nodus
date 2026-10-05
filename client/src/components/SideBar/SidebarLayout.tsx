@@ -23,21 +23,20 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import PeopleIcon from '@mui/icons-material/People';
-import BusinessIcon from '@mui/icons-material/Business';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import PersonalInjuryIcon from '@mui/icons-material/PersonalInjury';
 import Collapse from '@mui/material/Collapse';
 import { useNavigate } from 'react-router-dom';
-import { LocalHospital, PointOfSale, LocalOffer, Add, Visibility } from '@mui/icons-material';
+import { PointOfSale, LocalOffer, Add, Visibility } from '@mui/icons-material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import HistoryIcon from '@mui/icons-material/History';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import ListSubheader from '@mui/material/ListSubheader';
 import ApiIcon from '@mui/icons-material/Api';
+import { clearSession } from '../../services/auth';
+import { usePermisos } from '../../hooks/usePermission';
 
 const drawerWidth = 240;
 
@@ -117,12 +116,14 @@ interface SubMenuItem {
   text: string;
   path: string;
   icon?: React.ReactNode;
+  permiso?: string; // nombreSistema requerido; sin permiso = visible para todos
 }
 
 interface MenuItem {
   text: string;
   path?: string;
   icon: React.ReactNode;
+  permiso?: string;
   subItems?: SubMenuItem[];
 }
 
@@ -136,6 +137,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const [open, setOpen] = useState(true);
   const [openSubMenus, setOpenSubMenus] = useState<{ [key: string]: boolean }>({});
   const navigate = useNavigate();
+  const permisos = usePermisos();
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -146,8 +148,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
+    clearSession();
     navigate('/login');
   };
 
@@ -167,8 +168,8 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           text: 'ABM',
           icon: <InboxIcon />,
           subItems: [
-            { text: 'Persona-Entidad', path: '/abm/personas', icon: <PeopleIcon /> },
-            { text: 'Productos', path: '/abm/productos', icon: <InventoryIcon /> },
+            { text: 'Persona-Entidad', path: '/abm/personas', icon: <PeopleIcon />, permiso: 'ACCESO_ABM' },
+            { text: 'Productos', path: '/abm/productos', icon: <InventoryIcon />, permiso: 'ACCESO_ABM' },
           ],
         },
       ],
@@ -180,40 +181,43 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         {
           text: 'Facturación',
           path: '/facturacion',
+          permiso: 'ACCESO_VENTAS',
           icon: <ReceiptIcon />,
         },
         {
           text: 'Pedidos',
           path: '/pedidos',
+          permiso: 'ACCESO_PEDIDOS',
           icon: <ReceiptLongIcon />,
         },
         {
           text: 'Arqueo de Caja',
           icon: <PointOfSale />,
           subItems: [
-            { text: 'Arqueo de Caja', path: '/caja/arqueo', icon: <ReceiptLongIcon /> },
+            { text: 'Arqueo de Caja', path: '/caja/arqueo', icon: <ReceiptLongIcon />, permiso: 'ACCESO_CAJA' },
           ],
         },
         {
           text: 'Compras',
           path: '/compras',
+          permiso: 'ACCESO_COMPRAS',
           icon: <ShoppingCartIcon />,
         },
         {
           text: 'Ajuste / Stock Inicial',
           icon: <ApiIcon />,
           subItems: [
-            { text: 'Ajustes', path: '/mercaderia/ajustes', icon: <InventoryIcon /> },
-            { text: 'Stock Inicial', path: '/mercaderia/stock-inicial', icon: <InventoryIcon /> },
-            { text: 'Carga de Productos',path: '/mercaderia/carga-productos',icon: <InventoryIcon /> }
+            { text: 'Ajustes', path: '/mercaderia/ajustes', icon: <InventoryIcon />, permiso: 'ACCESO_AJUSTES' },
+            { text: 'Stock Inicial', path: '/mercaderia/stock-inicial', icon: <InventoryIcon />, permiso: 'ACCESO_AJUSTES' },
+            { text: 'Carga de Productos',path: '/mercaderia/carga-productos',icon: <InventoryIcon />, permiso: 'ACCESO_CARGA_PRODUCTOS' }
           ],
         },
         {
           text: 'Mercadería',
           icon: <InventoryIcon />,
           subItems: [
-            { text: 'Generación de Códigos', path: '/mercaderia/generacion-codigo-barra', icon: <InventoryIcon /> },
-            { text: 'Impresión de Códigos', path: '/mercaderia/impresion-codigo-barra', icon: <InventoryIcon /> },
+            { text: 'Generación de Códigos', path: '/mercaderia/generacion-codigo-barra', icon: <InventoryIcon />, permiso: 'ACCESO_CARGA_PRODUCTOS' },
+            { text: 'Impresión de Códigos', path: '/mercaderia/impresion-codigo-barra', icon: <InventoryIcon />, permiso: 'VER_STOCK' },
           ],
         }
       ],
@@ -226,8 +230,8 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           text: 'Oferta',
           icon: <LocalOffer />,
           subItems: [
-            { text: 'Crear Ofertas', path: '/oferta/crear', icon: <Add /> },
-            { text: 'Ver Ofertas', path: '/oferta/ver', icon: <Visibility /> },
+            { text: 'Crear Ofertas', path: '/oferta/crear', icon: <Add />, permiso: 'ACCESO_OFERTAS' },
+            { text: 'Ver Ofertas', path: '/oferta/ver', icon: <Visibility />, permiso: 'ACCESO_OFERTAS' },
           ],
         },
       ],
@@ -239,24 +243,27 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         {
           text: 'Consulta Ventas',
           path: '/consultas/ventas',
+          permiso: 'ACCESO_VENTAS',
           icon: <ReceiptLongIcon />,
         },
         {
           text: 'Consulta Arqueo de Caja',
           path: '/consultas/arqueo-caja',
+          permiso: 'RPT_CAJA',
           icon: <PointOfSale />,
         },
         {
           text: 'Historial de Cliente',
           path: '/consultas/historial-cliente',
+          permiso: 'ACCESO_HISTORIAL_CLIENTE',
           icon: <PersonSearchIcon />,
         },
         {
           text: 'Mercaderia',
           icon: <InventoryIcon />,
           subItems: [
-            { text: 'Consulta Stock', path: '/mercaderia/consulta-stock', icon: <InventoryIcon /> },
-            { text: 'Consulta Carga de Productos', path: '/consultas/carga-productos', icon: <InventoryIcon /> }
+            { text: 'Consulta Stock', path: '/mercaderia/consulta-stock', icon: <InventoryIcon />, permiso: 'VER_STOCK' },
+            { text: 'Consulta Carga de Productos', path: '/consultas/carga-productos', icon: <InventoryIcon />, permiso: 'ACCESO_CARGA_PRODUCTOS' }
           ],
         }
       ],
@@ -268,6 +275,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         {
           text: 'Panel de Reportes',
           path: '/reportes',
+          permiso: 'RPT_CAJA',
           icon: <ReceiptIcon />,
         },
       ],
@@ -280,19 +288,38 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           text: 'Administración',
           icon: <SettingsIcon />,
           subItems: [
-            { text: 'Roles', path: '/administracion/roles', icon: <PeopleIcon /> },
-            { text: 'Usuarios', path: '/administracion/usuarios', icon: <PeopleIcon /> },
-            { text: 'Terminales', path: '/administracion/terminales', icon: <InventoryIcon /> },
+            { text: 'Roles', path: '/administracion/roles', icon: <PeopleIcon />, permiso: 'ACCESO_SEGURIDAD' },
+            { text: 'Usuarios', path: '/administracion/usuarios', icon: <PeopleIcon />, permiso: 'ACCESO_SEGURIDAD' },
+            { text: 'Terminales', path: '/administracion/terminales', icon: <InventoryIcon />, permiso: 'ACCESO_SEGURIDAD' },
           ],
         },
         {
           text: 'Auditoría',
           path: '/auditoria',
+          permiso: 'ACCESO_AUDITORIA',
           icon: <HistoryIcon />,
         },
       ],
     },
   ], []);
+
+  // Menú filtrado por los permisos del usuario: se ocultan items, submenús y secciones vacías
+  const menuVisible = React.useMemo<MenuSection[]>(() => {
+    if (!permisos) return [];
+    const puedeVer = (permiso?: string) => !permiso || permisos.has(permiso);
+
+    return menuSections
+      .map((section) => ({
+        ...section,
+        items: section.items
+          .filter((item) => puedeVer(item.permiso))
+          .map((item) => item.subItems
+            ? { ...item, subItems: item.subItems.filter((sub) => puedeVer(sub.permiso)) }
+            : item)
+          .filter((item) => !item.subItems || item.subItems.length > 0),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [menuSections, permisos]);
 
   const renderMenuItem = (item: MenuItem) => (
     <React.Fragment key={item.text}>
@@ -381,7 +408,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Aura Chic
+            Nodus
           </Typography>
           <IconButton
             color="inherit"
@@ -399,7 +426,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           </IconButton>
         </DrawerHeader>
         <Divider />
-        {menuSections.map((section, sectionIndex) => (
+        {menuVisible.map((section, sectionIndex) => (
           <React.Fragment key={section.label}>
             <List
               subheader={
@@ -421,18 +448,9 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                 ) : undefined
               }
             >
-              {section.items.length === 0 && open && (
-                <ListItem>
-                  <ListItemText
-                    primary="— próximamente —"
-                    primaryTypographyProps={{ fontSize: '0.75rem', color: 'text.disabled' }}
-                    sx={{ pl: 1 }}
-                  />
-                </ListItem>
-              )}
               {section.items.map((item) => renderMenuItem(item))}
             </List>
-            {sectionIndex < menuSections.length - 1 && <Divider />}
+            {sectionIndex < menuVisible.length - 1 && <Divider />}
           </React.Fragment>
         ))}
       </Drawer>

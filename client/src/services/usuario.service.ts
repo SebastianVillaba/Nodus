@@ -36,8 +36,8 @@ export const usuarioService = {
         const response = await axios.get(`${API_BASE_URL}/usuario/personales-sin-usuario`);
         return response.data;
     },
-    validarVendedor: async (password: string): Promise<{ success: boolean; result?: { idVendedor: number; nombre: string }; message?: string }> => {
-        const response = await axios.post(`${API_BASE_URL}/usuario/validar-vendedor`, { password });
+    validarVendedor: async (username: string, password: string): Promise<{ success: boolean; result?: { idVendedor: number; nombre: string }; message?: string }> => {
+        const response = await axios.post(`${API_BASE_URL}/usuario/validar-vendedor`, { username, password });
         return response.data;
     }
 };

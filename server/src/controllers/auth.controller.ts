@@ -1,82 +1,52 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { executeRequest, sql } from "../utils/dbHandler";
 import { sendError } from '../utils/errorResponse';
+import { firmarToken } from '../Middlewares/auth.middleware';
 
 interface Usuario {
   idUsuario: number;
   username: string;
   password: string;
-  role: string;
+  activo: boolean;
 }
 
-export const register = async (req: Request, res: Response): Promise<void> => {
-  const { username, password, role = 'user' } = req.body;
+const CREDENCIALES_INVALIDAS = "Usuario o contraseña incorrectos";
 
-  if (!username || !password) {
-    res.status(400).json({ message: "Username y password son requeridos" });
-    return;
-  }
+/**
+ * Busca un usuario activo y valida su contraseña.
+ * Devuelve null si el usuario no existe, está inactivo o la contraseña no coincide.
+ */
+export const validarCredenciales = async (username: string, password: string): Promise<Usuario | null> => {
+  const result = await executeRequest({
+    query: 'SELECT idUsuario, username, password, activo FROM usuario WHERE username = @username',
+    inputs: [{ name: 'username', type: sql.VarChar(50), value: username }],
+  });
 
-  try {
-    // Verificar si el usuario ya existe
-    const checkResult = await executeRequest({
-      query: `SELECT * FROM usuario WHERE username = '${username}'`
-    });
+  const user = result.recordset[0] as Usuario | undefined;
+  if (!user || !user.activo) return null;
 
-    // Si es que el resultado tiene una longitud mayor a 0, significa que el usuario ya existe.
-    if (checkResult.recordset.length > 0) {
-      res.status(400).json({ message: "El usuario ya existe" });
-      return;
-    }
-
-    // Encriptar contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insertar usuario
-    await executeRequest({
-      query: `INSERT INTO usuario (username, password) VALUES ('${username}', '${hashedPassword}')`
-    });
-
-    res.status(201).json({ message: "Usuario creado exitosamente" });
-  } catch (error) {
-    sendError(res, error, 'Error en el servidor');
-  }
+  const validPassword = await bcrypt.compare(password, user.password);
+  return validPassword ? user : null;
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
 
-  if (!username || !password) {
+  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
     res.status(400).json({ message: "Nombre de usuario y contraseña son obligatorios!" });
     return;
   }
 
   try {
-    const result = await executeRequest({
-      query: `SELECT * FROM usuario WHERE username = '${username}'`
-    });
-    
-    if (result.recordset.length === 0) {
-      res.status(401).json({ message: "Usuario no encontrado" });
+    const user = await validarCredenciales(username, password);
+
+    if (!user) {
+      res.status(401).json({ message: CREDENCIALES_INVALIDAS });
       return;
     }
 
-    console.log("User from DB:", result.recordset[0]);
-    const user = result.recordset[0] as Usuario;
-    const validPassword = await bcrypt.compare(password, user.password);
-
-    if (!validPassword) {
-      res.status(401).json({ message: "Contraseña incorrecta" });
-      return;
-    }
-
-    const token = jwt.sign(
-      { id: user.idUsuario, username: user.username },
-      process.env.JWT_SECRET || "mi_secreto_temporal",
-      { expiresIn: "1h" }
-    );
+    const token = firmarToken({ id: user.idUsuario, username: user.username });
 
     res.json({
       message: "Login exitoso",
@@ -84,12 +54,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       user: {
         idUsuario: user.idUsuario,
         username: user.username,
-        role: user.role
       },
       success: true
     });
-    console.log(user);
-    
   } catch (error) {
     sendError(res, error, 'Error en el servidor');
   }

@@ -6,17 +6,19 @@ export interface AnularFacturacionRequest {
   idVenta: number;
   idTerminalWeb: number;
   idSucursal: number;
-  idUsuarioAlta: number;
   explica: string;
   tipo: number;
+  usuarioAutorizador: string;
+  passwordAutorizador: string;
 }
 
 export interface AnularCargaProductoRequest {
   idCargaProducto: number;
   idTerminalWeb: number;
   idSucursal: number;
-  idUsuarioAlta: number;
   explica: string;
+  usuarioAutorizador: string;
+  passwordAutorizador: string;
 }
 
 export const anulacionService = {

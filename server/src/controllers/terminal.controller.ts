@@ -52,7 +52,8 @@ export const obtenerTerminalInfo = async (req: Request, res: Response) => {
 
   try {
     const response = await executeRequest({
-      query: `select * from [dbo].[funObtenerInfoTerminalWeb] (${idTerminalWeb})`
+      query: 'select * from [dbo].[funObtenerInfoTerminalWeb] (@idTerminalWeb)',
+      inputs: [{ name: 'idTerminalWeb', type: sql.Int, value: Number(idTerminalWeb) }],
     })
 
     if (response.recordset.length > 0) {

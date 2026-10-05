@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { executeRequest, sql } from "../utils/dbHandler";
 import { sendError } from '../utils/errorResponse';
 import { GuardarPermisosRequest, ValidarPermisoRequest } from "../types/rol.type";
+import { getUserId } from "../Middlewares/auth.middleware";
+import { obtenerPermisosUsuario, limpiarCachePermisos } from "../Middlewares/permisos.middleware";
 
 /**
  * Obtiene la configuración de permisos para un rol.
@@ -63,6 +65,8 @@ export const guardarConfiguracionRol = async (req: Request, res: Response): Prom
             }
         }
 
+        limpiarCachePermisos();
+
         res.status(200).json({
             success: true,
             message: "Configuración de rol guardada exitosamente"
@@ -91,8 +95,6 @@ export const validarPermiso = async (req: Request, res: Response): Promise<void>
             isStoredProcedure: true
         });
 
-        console.log(result);
-        
         const tienePermiso = result.recordset[0]?.accesoPermitido === 1;
 
         res.status(200).json({
@@ -116,9 +118,20 @@ export const obtenerRoles = async (req: Request, res: Response): Promise<void> =
             success: true,
             result: result.recordset
         });
-        console.log(result);
-        
     } catch (error: any) {
         sendError(res, error, 'Error al obtener roles');
+    }
+};
+
+/**
+ * Devuelve los permisos (nombreSistema) del usuario logueado.
+ * El cliente lo usa para armar el menú y proteger las pantallas.
+ */
+export const obtenerMisPermisos = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const permisos = await obtenerPermisosUsuario(getUserId(req));
+        res.status(200).json({ success: true, permisos: [...permisos] });
+    } catch (error: any) {
+        sendError(res, error, 'Error al obtener los permisos del usuario');
     }
 };

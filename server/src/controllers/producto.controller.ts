@@ -299,7 +299,8 @@ export const obtenerPrecioDescuento = async (req: Request, res: Response): Promi
   const { idProducto } = req.query;
   try {
     const result = await executeRequest({
-      query: `select [dbo].[funObtenerPrecioOferta](${idProducto}) as precioDescuento`,
+      query: 'select [dbo].[funObtenerPrecioOferta](@idProducto) as precioDescuento',
+      inputs: [{ name: 'idProducto', type: sql.Int, value: Number(idProducto) }],
       isStoredProcedure: false
     })
     res.status(200).json(result.recordset);

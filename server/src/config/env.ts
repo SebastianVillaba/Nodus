@@ -23,7 +23,9 @@ const envSchema = z.object({
   DB_NAME: z.string(),
   DB_USER: z.string().optional().default(''),
   DB_PASSWORD: z.string().optional().default(''),
-  JWT_SECRET: z.string().optional().default('mi_secreto_temporal'),
+  // Obligatorio: sin un secreto propio cualquiera podría firmar tokens válidos.
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET debe tener al menos 32 caracteres'),
+  JWT_EXPIRES_IN: z.string().optional().default('12h'),
 });
 
 export const env = envSchema.parse(process.env);

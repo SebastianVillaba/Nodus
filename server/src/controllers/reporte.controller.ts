@@ -403,7 +403,8 @@ export const reporteVentaResumidoFecha = async (req: Request, res: Response): Pr
       let sucursalNombre = 'Todas las Sucursales';
       if (parsedSucursalId > 0) {
         const sucResult = await executeRequest({
-          query: `SELECT nombreSucursal FROM Sucursal WHERE idSucursal = ${parsedSucursalId}`,
+          query: 'SELECT nombreSucursal FROM Sucursal WHERE idSucursal = @idSucursal',
+          inputs: [{ name: 'idSucursal', type: sql.Int, value: parsedSucursalId }],
           isStoredProcedure: false
         });
         if (sucResult.recordset?.[0]?.nombreSucursal) {

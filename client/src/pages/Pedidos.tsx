@@ -121,13 +121,14 @@ const Pedidos: React.FC = () => {
   }, []);
 
   const consultarDelivery = useCallback(async () => {
+    if (!idTerminalWeb) return;
     try {
-      const result = await deliveryService.getDeliveryActivo();
+      const result = await deliveryService.getDeliveryActivo(idTerminalWeb);
       setDeliveryList(result);
     } catch (error: any) {
       console.error(error);
     }
-  }, []);
+  }, [idTerminalWeb]);
 
   const limpiarDetalle = useCallback(async () => {
     if (!idTerminalWeb) return;
@@ -554,7 +555,7 @@ const Pedidos: React.FC = () => {
   };
 
   return (
-    <RequirePermission permission="ACCESO_COMPRAS">
+    <RequirePermission permission="ACCESO_PEDIDOS">
       <Box sx={{ height: 'calc(100vh - 10px)', p: 2, display: 'flex', flexDirection: 'column' }}>
         {/* Botones de Acción */}
         <Grid container spacing={2} sx={{ flexShrink: 0 }}>
