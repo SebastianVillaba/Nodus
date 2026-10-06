@@ -18,16 +18,16 @@ import { getErrorMessage } from '../../services/httpError';
 
 interface DetArqueoCreditoProps {
     idTerminalWeb: number;
-    // Ventas a crédito: se suman solas a lo arqueado (no entra dinero)
+    // Ventas a crédito: solo informativas (no entra dinero, no suman al arqueo)
     onTotalVentasCreditoChange?: (total: number) => void;
-    // Cobros de créditos: dinero que entró a la caja y la cajera debe tener contado
+    // Cobros de créditos del turno: se suman solos al total declarado
     onTotalCobrosChange?: (total: number) => void;
 }
 
 const formatGs = (valor: number) => new Intl.NumberFormat('es-PY', { maximumFractionDigits: 0 }).format(valor || 0);
 
 /**
- * Ventas a crédito y cobros de créditos de la caja abierta. Solo lectura: se cargan automáticamente.
+ * Ventas a crédito (informativas) y cobros de créditos (dinero que entró) de la caja abierta. Solo lectura.
  */
 const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTotalVentasCreditoChange, onTotalCobrosChange }) => {
     const [resumen, setResumen] = useState<ResumenCreditoCaja>({ ventasCredito: [], cobros: [] });
@@ -58,7 +58,7 @@ const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTo
             {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="subtitle2" fontWeight="bold">
-                    Ventas a crédito (se suman solas)
+                    Ventas a crédito (informativo, no suma)
                 </Typography>
                 <Tooltip title="Actualizar">
                     <IconButton size="small" onClick={cargar}><RefreshIcon fontSize="small" /></IconButton>
@@ -91,7 +91,7 @@ const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTo
             </Table>
 
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 2 }}>
-                Cobros de créditos (dinero recibido)
+                Cobros de créditos (se suman solos)
             </Typography>
             <Table size="small">
                 <TableHead>
@@ -119,7 +119,7 @@ const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTo
                 </TableBody>
             </Table>
             <Typography variant="caption" color="text.secondary">
-                Los cobros ya están incluidos en lo que el sistema espera: cuente ese dinero junto con el resto.
+                Los cobros del turno se suman solos al total declarado: no los vuelva a cargar a mano.
             </Typography>
         </Box>
     );

@@ -1,3 +1,6 @@
 uploads/
 # Scripts de base de datos (datos base con usuarios y datos personales): no se versionan
 database/
+
+# Migraciones viejas de la Fase 1: los cambios SQL se aplican directo en la base y se respaldan con .bak por fase
+migrations/

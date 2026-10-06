@@ -362,7 +362,7 @@ export const cajaService = {
 
     /**
      * Ventas a crédito y cobros de créditos de la caja abierta de la terminal.
-     * Las ventas a crédito se suman solas a lo arqueado; los cobros a lo esperado por el sistema.
+     * Las ventas a crédito son informativas; los cobros suman a lo esperado por el sistema.
      */
     resumenCreditoCaja: async (idTerminalWeb: number): Promise<ResumenCreditoCaja> => {
         const response = await axios.get(`${API_URL}/caja/resumen-credito`, { params: { idTerminalWeb } });

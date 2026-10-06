@@ -73,6 +73,18 @@ interface TransferenciaItem {
   monto: number;
 }
 
+interface VentaCreditoItem {
+  nroFactura: string;
+  cliente: string;
+  totalVenta: number;
+}
+
+interface CobroItem {
+  nroRecibo: number;
+  cliente: string;
+  totalCobrado: number;
+}
+
 const ConsultaArqueCaja: React.FC = () => {
   // ── Filtros ────────────────────────────────
   const [fechaDesde, setFechaDesde] = useState<string>(
@@ -97,6 +109,9 @@ const ConsultaArqueCaja: React.FC = () => {
   const [tarjetaCredito, setTarjetaCredito] = useState<TarjetaItem[]>([]);
   const [tarjetaDebito, setTarjetaDebito] = useState<TarjetaItem[]>([]);
   const [transferencias, setTransferencias] = useState<TransferenciaItem[]>([]);
+  const [ventasCredito, setVentasCredito] = useState<VentaCreditoItem[]>([]);
+  const [cobros, setCobros] = useState<CobroItem[]>([]);
+  const [totales, setTotales] = useState({ ventasContado: 0, cobranza: 0, gastos: 0 });
 
   // ── Navegación entre registros ──────────────
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
@@ -155,6 +170,9 @@ const ConsultaArqueCaja: React.FC = () => {
     setTarjetaCredito([]);
     setTarjetaDebito([]);
     setTransferencias([]);
+    setVentasCredito([]);
+    setCobros([]);
+    setTotales({ ventasContado: 0, cobranza: 0, gastos: 0 });
   };
 
   // ── Seleccionar arqueo de la lista ──────────
@@ -189,6 +207,13 @@ const ConsultaArqueCaja: React.FC = () => {
       setTarjetaCredito(resp.tarjetaCredito || []);
       setTarjetaDebito(resp.tarjetaDebito || []);
       setTransferencias(resp.transferencias || []);
+      setVentasCredito(resp.ventasCredito || []);
+      setCobros(resp.cobros || []);
+      setTotales({
+        ventasContado: resp.cabecera?.totalVentas || 0,
+        cobranza: resp.cabecera?.totalCobranza || 0,
+        gastos: resp.cabecera?.totalGastos || 0,
+      });
     } catch (err: any) {
       setError(err.message || 'Error al obtener el detalle del arqueo');
     }
@@ -219,7 +244,9 @@ const ConsultaArqueCaja: React.FC = () => {
           fechaCierre: datosReporte.resumen.fechaCierre,
           montoInicial: datosReporte.resumen.montoInicial || 0,
           totalVentas: datosReporte.resumen.totalVentas || 0,
-          totalCobranza: datosReporte.resumen.totalCobranzas || 0,
+          totalVentasContado: datosReporte.resumen.totalVentasContado || 0,
+          totalVentasCredito: datosReporte.resumen.totalVentasCredito || 0,
+          totalCobranza: datosReporte.resumen.totalCobranza || 0,
           totalGastos: datosReporte.resumen.totalGastos || 0,
           totalMoneda: datosReporte.resumen.totalMoneda || 0,
           totalTarjetaDebito: datosReporte.resumen.totalTarjetaDebito || 0,
@@ -234,7 +261,9 @@ const ConsultaArqueCaja: React.FC = () => {
         arqueoMoneda: datosReporte.arqueoMoneda || [],
         tarjetasCredito: datosReporte.tarjetasCredito || [],
         tarjetasDebito: datosReporte.tarjetasDebito || [],
-        transferencias: datosReporte.transferencias || []
+        transferencias: datosReporte.transferencias || [],
+        ventasCredito: datosReporte.ventasCredito || [],
+        cobros: datosReporte.cobros || []
       };
 
       await ticketService.generarTicketCierreCaja(datosCierre);
@@ -463,17 +492,20 @@ const ConsultaArqueCaja: React.FC = () => {
 
                 {[
                   ['Monto Inicial:', formatMoneda(selectedArqueo?.montoInicial ?? 0)],
+                  ['+ Ventas Contado:', formatMoneda(totales.ventasContado)],
+                  ['+ Cobranzas:', formatMoneda(totales.cobranza)],
+                  ['- Gastos:', formatMoneda(totales.gastos)],
                   ['Saldo Sistema (Teórico):', formatMoneda(selectedArqueo?.montoSistema ?? 0)],
                   ['Saldo Real (Cajero):', formatMoneda(selectedArqueo?.montoContadoCajero ?? 0)],
                 ].map(([label, value], i) => (
                   <React.Fragment key={label}>
                     <Grid item xs={7}>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: i === 2 ? 600 : 400 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: i >= 4 ? 600 : 400 }}>
                         {label}
                       </Typography>
                     </Grid>
                     <Grid item xs={5}>
-                      <Typography variant="body2" align="right" sx={{ fontWeight: i === 2 ? 700 : 500 }}>
+                      <Typography variant="body2" align="right" sx={{ fontWeight: i >= 4 ? 700 : 500 }}>
                         {value}
                       </Typography>
                     </Grid>
@@ -616,6 +648,71 @@ const ConsultaArqueCaja: React.FC = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
+                </Grid>
+              </Grid>
+
+              {/* Cobros de créditos (suman) y ventas a crédito (informativas) */}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  {sectionLabel('Cobros de Créditos')}
+                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 150 }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }}>Recibo</TableCell>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }}>Cliente</TableCell>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }} align="right">Monto</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {cobros.map((x) => (
+                          <TableRow key={x.nroRecibo}>
+                            <TableCell>{x.nroRecibo}</TableCell>
+                            <TableCell>{x.cliente}</TableCell>
+                            <TableCell align="right">{formatMoneda(x.totalCobrado)}</TableCell>
+                          </TableRow>
+                        ))}
+                        {cobros.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} align="center" sx={{ py: 2 }}>
+                              <Typography variant="caption" color="text.disabled">Sin cobros de créditos</Typography>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  {sectionLabel('Ventas a Crédito (informativo)')}
+                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 150 }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }}>Factura</TableCell>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }}>Cliente</TableCell>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }} align="right">Monto</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {ventasCredito.map((x) => (
+                          <TableRow key={x.nroFactura}>
+                            <TableCell>{x.nroFactura}</TableCell>
+                            <TableCell>{x.cliente}</TableCell>
+                            <TableCell align="right">{formatMoneda(x.totalVenta)}</TableCell>
+                          </TableRow>
+                        ))}
+                        {ventasCredito.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} align="center" sx={{ py: 2 }}>
+                              <Typography variant="caption" color="text.disabled">Sin ventas a crédito</Typography>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <Typography variant="caption" color="text.secondary">No ingresan dinero: no suman al saldo de la caja.</Typography>
                 </Grid>
               </Grid>
 

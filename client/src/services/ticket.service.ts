@@ -495,11 +495,8 @@ class TicketService {
         doc.setFontSize(9);
 
         this.dibujarFilaResumen(doc, 'Monto Inicial:', datos.resumen.montoInicial);
-        this.dibujarFilaResumen(doc, 'Total Ventas:', datos.resumen.totalVentas);
-        if (datos.resumen.totalVentasCredito) {
-            this.dibujarFilaResumen(doc, '  Contado:', datos.resumen.totalVentasContado || 0);
-            this.dibujarFilaResumen(doc, '  Credito:', datos.resumen.totalVentasCredito);
-        }
+        // Total Ventas = solo contado (ingresa dinero); las ventas a crédito van aparte, informativas
+        this.dibujarFilaResumen(doc, 'Total Ventas Contado:', datos.resumen.totalVentas);
         this.dibujarFilaResumen(doc, 'Total Cobranza:', datos.resumen.totalCobranza);
         this.dibujarFilaResumen(doc, 'Total Gastos:', datos.resumen.totalGastos);
 
@@ -630,7 +627,7 @@ class TicketService {
     }
 
     // Tabla de dos columnas (texto / monto) con título, para las secciones del cierre
-    private dibujarSeccionCierre(doc: jsPDF, titulo: string, filas: { texto: string; monto: number }[]): void {
+    private dibujarSeccionCierre(doc: jsPDF, titulo: string, filas: { texto: string; monto: number }[], nota?: string): void {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.text(titulo, this.ANCHO_TICKET / 2, this.posY, { align: 'center' });
@@ -651,13 +648,21 @@ class TicketService {
         doc.text(this.formatearNumero(total), this.ANCHO_TICKET - this.MARGEN_IZQ, this.posY, { align: 'right' });
         this.posY += 4;
 
+        if (nota) {
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(7);
+            doc.text(nota, this.ANCHO_TICKET / 2, this.posY, { align: 'center' });
+            this.posY += 4;
+        }
+
         this.dibujarLinea(doc);
     }
 
     private dibujarVentasCreditoCierreCaja(doc: jsPDF, datos: DatosCierreCaja): void {
         if (datos.ventasCredito && datos.ventasCredito.length > 0) {
-            this.dibujarSeccionCierre(doc, 'VENTAS A CREDITO',
-                datos.ventasCredito.map(v => ({ texto: `${v.nroFactura} ${v.cliente || ''}`, monto: v.totalVenta })));
+            this.dibujarSeccionCierre(doc, 'VENTAS A CREDITO (INFORMATIVO)',
+                datos.ventasCredito.map(v => ({ texto: `${v.nroFactura} ${v.cliente || ''}`, monto: v.totalVenta })),
+                'No ingresa dinero: no suma al saldo de la caja');
         }
     }
 
@@ -715,10 +720,9 @@ class TicketService {
         altura += 5; // Total Ventas
         altura += 5; // Total Cobranza
         altura += 5; // Total Gastos
-        if (datos.resumen.totalVentasCredito) altura += 10; // Contado / Crédito
 
-        // Ventas a crédito y cobros: título + filas + total + separador
-        if (datos.ventasCredito && datos.ventasCredito.length > 0) altura += 5 + datos.ventasCredito.length * 4 + 4 + 5;
+        // Ventas a crédito (con nota) y cobros: título + filas + total + separador
+        if (datos.ventasCredito && datos.ventasCredito.length > 0) altura += 5 + datos.ventasCredito.length * 4 + 4 + 4 + 5;
         if (datos.cobros && datos.cobros.length > 0) altura += 5 + datos.cobros.length * 4 + 4 + 5;
         
         if (datos.resumen.totalMoneda !== undefined && datos.resumen.totalMoneda !== null) altura += 5;

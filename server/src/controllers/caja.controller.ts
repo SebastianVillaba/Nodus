@@ -837,7 +837,7 @@ export const listarMonedas = async (req: Request, res: Response): Promise<void> 
 
 /**
  * Ventas a crédito y cobros de créditos de la caja abierta de la terminal (pantalla de arqueo).
- * Las ventas a crédito se suman solas a lo arqueado; los cobros a lo esperado.
+ * Las ventas a crédito son informativas (no entra dinero); los cobros suman a lo esperado.
  */
 export const resumenCreditoCaja = async (req: Request, res: Response): Promise<void> => {
   const idTerminalWeb = Number(req.query.idTerminalWeb);

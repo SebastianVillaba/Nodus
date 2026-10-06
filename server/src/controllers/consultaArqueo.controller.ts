@@ -159,7 +159,9 @@ export const consultaInformacionArqueo = async (req: Request, res: Response): Pr
       monedas: recordsets?.[2] ?? [],
       tarjetaCredito: recordsets?.[3] ?? [],
       tarjetaDebito: recordsets?.[4] ?? [],
-      transferencias: recordsets?.[5] ?? []
+      transferencias: recordsets?.[5] ?? [],
+      ventasCredito: recordsets?.[6] ?? [],   // informativas: no suman al saldo de la caja
+      cobros: recordsets?.[7] ?? []           // cobros de créditos activos: suman al saldo teórico
     });
 
   } catch (error: any) {
