@@ -22,10 +22,12 @@ interface AnulacionModalProps {
   idVenta?: number;
   idCargaProducto?: number;
   idCobroCredito?: number;
+  idNotaCredito?: number;
+  tipoNotaCredito?: 'DEV' | 'MONTO';
   tipoVenta?: string;
   onSuccess: () => void;
   imp?: boolean;
-  tipoMovimiento?: 'VENTA' | 'CARGA' | 'COBRO';
+  tipoMovimiento?: 'VENTA' | 'CARGA' | 'COBRO' | 'NC';
 }
 
 const AnulacionModal: React.FC<AnulacionModalProps> = ({
@@ -34,6 +36,8 @@ const AnulacionModal: React.FC<AnulacionModalProps> = ({
   idVenta,
   idCargaProducto,
   idCobroCredito,
+  idNotaCredito,
+  tipoNotaCredito = 'DEV',
   tipoVenta,
   onSuccess,
   imp = true,
@@ -49,7 +53,10 @@ const AnulacionModal: React.FC<AnulacionModalProps> = ({
 
   const reasonInputRef = useRef<HTMLInputElement>(null);
 
-  const idMovimientoActual = tipoMovimiento === 'CARGA' ? idCargaProducto : tipoMovimiento === 'COBRO' ? idCobroCredito : idVenta;
+  const idMovimientoActual = tipoMovimiento === 'CARGA' ? idCargaProducto
+    : tipoMovimiento === 'COBRO' ? idCobroCredito
+    : tipoMovimiento === 'NC' ? idNotaCredito
+    : idVenta;
 
   // Reset state when opening modal
   useEffect(() => {
@@ -96,7 +103,18 @@ const AnulacionModal: React.FC<AnulacionModalProps> = ({
         passwordAutorizador: password,
       };
 
-      if (tipoMovimiento === 'COBRO') {
+      if (tipoMovimiento === 'NC') {
+        if (!idNotaCredito) {
+          throw new Error('Nota de crédito no especificada.');
+        }
+
+        await anulacionService.anularNotaCredito({
+          tipo: tipoNotaCredito,
+          idDocumento: idNotaCredito,
+          explica: reason.trim(),
+          ...autorizador,
+        });
+      } else if (tipoMovimiento === 'COBRO') {
         if (!idCobroCredito) {
           throw new Error('Recibo no especificado.');
         }

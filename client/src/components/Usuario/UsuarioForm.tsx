@@ -253,6 +253,17 @@ export default function UsuarioForm({ formData, setFormData, isNewMode }: Usuari
                                 label="Anular Cobro de Créditos"
                             />
                         </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={!!formData.anularNotaCredito}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, anularNotaCredito: e.target.checked }))}
+                                    />
+                                }
+                                label="Anular Notas de Crédito"
+                            />
+                        </Grid>
                     </Grid>
                 </Box>
             </Stack>

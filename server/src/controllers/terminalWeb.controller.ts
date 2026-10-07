@@ -4,7 +4,7 @@ import { sendError } from '../utils/errorResponse';
 import { CrearTerminalWebRequest, ModificarTerminalWebRequest } from '../types/terminalWeb.type';
 
 export const crearTerminalWeb = async (req: Request, res: Response) => {
-    const { nombreTerminal, terminalToken, idSucursal, idFactura, idDepositoVenta, idDepositoCompra, idDepositoRemision, idUsuarioAlta } = req.body as CrearTerminalWebRequest;
+    const { nombreTerminal, terminalToken, idSucursal, idFactura, idFacturaNotaCredito, idDepositoVenta, idDepositoCompra, idDepositoRemision, idUsuarioAlta } = req.body as CrearTerminalWebRequest;
 
     try {
         await executeRequest({
@@ -18,7 +18,8 @@ export const crearTerminalWeb = async (req: Request, res: Response) => {
                 { name: 'idDepositoVenta', type: sql.Int, value: idDepositoVenta },
                 { name: 'idDepositoCompra', type: sql.Int, value: idDepositoCompra },
                 { name: 'idDepositoRemision', type: sql.Int, value: idDepositoRemision },
-                { name: 'idUsuarioAlta', type: sql.Int, value: idUsuarioAlta }
+                { name: 'idUsuarioAlta', type: sql.Int, value: idUsuarioAlta },
+                { name: 'idFacturaNotaCredito', type: sql.Int, value: idFacturaNotaCredito || null }
             ]
         });
 
@@ -29,7 +30,7 @@ export const crearTerminalWeb = async (req: Request, res: Response) => {
 };
 
 export const modificarTerminalWeb = async (req: Request, res: Response) => {
-    const { idTerminalWeb, nombreTerminal, terminalToken, idSucursal, idFactura, idDepositoVenta, idDepositoCompra, idDepositoRemision, activo, idUsuarioMod } = req.body as ModificarTerminalWebRequest;
+    const { idTerminalWeb, nombreTerminal, terminalToken, idSucursal, idFactura, idFacturaNotaCredito, idDepositoVenta, idDepositoCompra, idDepositoRemision, activo, idUsuarioMod } = req.body as ModificarTerminalWebRequest;
 
     try {
         await executeRequest({
@@ -45,7 +46,8 @@ export const modificarTerminalWeb = async (req: Request, res: Response) => {
                 { name: 'idDepositoCompra', type: sql.Int, value: idDepositoCompra },
                 { name: 'idDepositoRemision', type: sql.Int, value: idDepositoRemision },
                 { name: 'activo', type: sql.Bit, value: activo },
-                { name: 'idUsuarioMod', type: sql.Int, value: idUsuarioMod }
+                { name: 'idUsuarioMod', type: sql.Int, value: idUsuarioMod },
+                { name: 'idFacturaNotaCredito', type: sql.Int, value: idFacturaNotaCredito || null }
             ]
         });
 

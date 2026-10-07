@@ -857,6 +857,7 @@ export const resumenCreditoCaja = async (req: Request, res: Response): Promise<v
       success: true,
       ventasCredito: recordsets?.[0] ?? [],
       cobros: recordsets?.[1] ?? [],
+      devoluciones: recordsets?.[2] ?? [],   // devoluciones de ventas al contado: el dinero salió de la caja
     });
   } catch (error: any) {
     sendError(res, error, 'Error al consultar las ventas a crédito de la caja');

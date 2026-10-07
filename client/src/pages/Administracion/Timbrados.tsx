@@ -26,12 +26,14 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RequirePermission from '../../components/RequirePermission';
 import { timbradoService } from '../../services/timbrado.service';
-import type { Timbrado, GuardarTimbradoRequest } from '../../services/timbrado.service';
+import { NOMBRE_TIPO_COMPROBANTE } from '../../services/timbrado.service';
+import type { Timbrado, GuardarTimbradoRequest, TipoComprobante } from '../../services/timbrado.service';
 import { pedidoInternoService } from '../../services/pedidoInterno.service';
 import { getErrorMessage } from '../../services/httpError';
 
 const FORM_VACIO: GuardarTimbradoRequest = {
     idFactura: 0,
+    idTipoComprobante: 1,
     idSucursal: 0,
     dsuc: '001',
     dcaja: '001',
@@ -96,6 +98,7 @@ export default function Timbrados(): JSX.Element {
         setSuccess('');
         setForm({
             idFactura: t.idFactura,
+            idTipoComprobante: t.idTipoComprobante,
             idSucursal: t.idSucursal,
             dsuc: t.dsuc,
             dcaja: t.dcaja,
@@ -163,7 +166,7 @@ export default function Timbrados(): JSX.Element {
                                 <ListItem key={t.idFactura} disablePadding>
                                     <ListItemButton selected={seleccionado?.idFactura === t.idFactura} onClick={() => seleccionar(t)}>
                                         <ListItemText
-                                            primary={`${t.puntoExpedicion} · ${t.timbrado}`}
+                                            primary={`${NOMBRE_TIPO_COMPROBANTE[t.idTipoComprobante] ?? t.tipoComprobante} · ${t.puntoExpedicion} · ${t.timbrado}`}
                                             secondary={`${t.nombreSucursal} · vence ${new Date(soloFecha(t.fechaCaduca) + 'T00:00:00').toLocaleDateString('es-PY')}`}
                                         />
                                         <Chip size="small" label={TEXTO_ESTADO[t.estado]} color={COLOR_ESTADO[t.estado]} />
@@ -191,10 +194,22 @@ export default function Timbrados(): JSX.Element {
 
                     {mostrarForm ? (
                         <Grid container spacing={2} sx={{ maxWidth: 760 }}>
+                            <Grid size={{ xs: 12 }}>
+                                <FormControl fullWidth size="small">
+                                    <InputLabel>Tipo de comprobante</InputLabel>
+                                    <Select label="Tipo de comprobante" value={form.idTipoComprobante}
+                                        onChange={(e) => set('idTipoComprobante', Number(e.target.value) as TipoComprobante)}
+                                        disabled={!!seleccionado && (seleccionado.ultimoEmitido > 0 || seleccionado.terminalesAsignadas > 0)}>
+                                        {([1, 2] as TipoComprobante[]).map((tipo) => (
+                                            <MenuItem key={tipo} value={tipo}>{NOMBRE_TIPO_COMPROBANTE[tipo]}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField fullWidth size="small" label="Nº de timbrado" value={form.timbrado}
-                                    onChange={(e) => set('timbrado', e.target.value.replace(/\D/g, ''))}
-                                    inputProps={{ maxLength: 20, inputMode: 'numeric' }} />
+                                    onChange={(e) => set('timbrado', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                                    inputProps={{ maxLength: 8, inputMode: 'numeric' }} />
                             </Grid>
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <FormControl fullWidth size="small">
@@ -234,7 +249,7 @@ export default function Timbrados(): JSX.Element {
                             <Grid size={{ xs: 4 }}>
                                 <TextField fullWidth size="small" label="Próximo número a emitir" value={form.proximoNumero || ''}
                                     onChange={(e) => set('proximoNumero', numero(e.target.value))}
-                                    helperText={seleccionado ? `Última emitida: ${seleccionado.ultimoEmitido || 'ninguna'}` : ' '} />
+                                    helperText={seleccionado ? `Último emitido: ${seleccionado.ultimoEmitido || 'ninguno'}` : ' '} />
                             </Grid>
                             <Grid size={{ xs: 12 }}>
                                 <FormControlLabel control={<Switch checked={form.preImpreso} onChange={(e) => set('preImpreso', e.target.checked)} />} label="Formulario preimpreso" />

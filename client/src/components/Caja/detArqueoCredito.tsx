@@ -20,17 +20,20 @@ interface DetArqueoCreditoProps {
     idTerminalWeb: number;
     // Ventas a crédito: solo informativas (no entra dinero, no suman al arqueo)
     onTotalVentasCreditoChange?: (total: number) => void;
-    // Cobros de créditos del turno: se suman solos al total declarado
+    // Cobros de créditos del turno: el dinero está en el cajón; el sistema los suma a lo esperado
     onTotalCobrosChange?: (total: number) => void;
+    // Devoluciones de ventas al contado: el dinero ya salió del cajón (se restan de lo esperado)
+    onTotalDevolucionesChange?: (total: number) => void;
 }
 
 const formatGs = (valor: number) => new Intl.NumberFormat('es-PY', { maximumFractionDigits: 0 }).format(valor || 0);
 
 /**
- * Ventas a crédito (informativas) y cobros de créditos (dinero que entró) de la caja abierta. Solo lectura.
+ * Ventas a crédito (informativas), cobros de créditos (dinero que entró) y devoluciones (dinero que salió)
+ * de la caja abierta. Solo lectura.
  */
-const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTotalVentasCreditoChange, onTotalCobrosChange }) => {
-    const [resumen, setResumen] = useState<ResumenCreditoCaja>({ ventasCredito: [], cobros: [] });
+const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTotalVentasCreditoChange, onTotalCobrosChange, onTotalDevolucionesChange }) => {
+    const [resumen, setResumen] = useState<ResumenCreditoCaja>({ ventasCredito: [], cobros: [], devoluciones: [] });
     const [error, setError] = useState('');
 
     const cargar = useCallback(async () => {
@@ -41,10 +44,11 @@ const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTo
             setResumen(datos);
             onTotalVentasCreditoChange?.(datos.ventasCredito.reduce((sum, v) => sum + v.totalVenta, 0));
             onTotalCobrosChange?.(datos.cobros.reduce((sum, c) => sum + c.totalCobrado, 0));
+            onTotalDevolucionesChange?.(datos.devoluciones.reduce((sum, d) => sum + d.montoDevueltoCaja, 0));
         } catch (err) {
             setError(getErrorMessage(err, 'Error al cargar las ventas a crédito'));
         }
-    }, [idTerminalWeb, onTotalVentasCreditoChange, onTotalCobrosChange]);
+    }, [idTerminalWeb, onTotalVentasCreditoChange, onTotalCobrosChange, onTotalDevolucionesChange]);
 
     useEffect(() => {
         cargar();
@@ -52,13 +56,14 @@ const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTo
 
     const totalVentas = resumen.ventasCredito.reduce((sum, v) => sum + v.totalVenta, 0);
     const totalCobros = resumen.cobros.reduce((sum, c) => sum + c.totalCobrado, 0);
+    const totalDevoluciones = resumen.devoluciones.reduce((sum, d) => sum + d.montoDevueltoCaja, 0);
 
     return (
         <Box>
             {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="subtitle2" fontWeight="bold">
-                    Ventas a crédito (informativo, no suma)
+                    Ventas a crédito
                 </Typography>
                 <Tooltip title="Actualizar">
                     <IconButton size="small" onClick={cargar}><RefreshIcon fontSize="small" /></IconButton>
@@ -91,7 +96,7 @@ const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTo
             </Table>
 
             <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 2 }}>
-                Cobros de créditos (se suman solos)
+                Cobros de créditos
             </Typography>
             <Table size="small">
                 <TableHead>
@@ -118,9 +123,35 @@ const DetArqueoCredito: React.FC<DetArqueoCreditoProps> = ({ idTerminalWeb, onTo
                     </TableRow>
                 </TableBody>
             </Table>
-            <Typography variant="caption" color="text.secondary">
-                Los cobros del turno se suman solos al total declarado: no los vuelva a cargar a mano.
+
+            <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 2 }}>
+                Devoluciones
             </Typography>
+            <Table size="small">
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Nota</TableCell>
+                        <TableCell>Cliente</TableCell>
+                        <TableCell align="right">Monto</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {resumen.devoluciones.map((d) => (
+                        <TableRow key={d.idNotaCredito}>
+                            <TableCell>{d.nroNotaCredito}</TableCell>
+                            <TableCell>{d.cliente}</TableCell>
+                            <TableCell align="right">{formatGs(d.montoDevueltoCaja)}</TableCell>
+                        </TableRow>
+                    ))}
+                    {resumen.devoluciones.length === 0 && (
+                        <TableRow><TableCell colSpan={3}><Typography variant="body2" color="text.secondary">Sin devoluciones</Typography></TableCell></TableRow>
+                    )}
+                    <TableRow>
+                        <TableCell colSpan={2}><strong>Total devoluciones</strong></TableCell>
+                        <TableCell align="right"><strong>{formatGs(totalDevoluciones)}</strong></TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
         </Box>
     );
 };

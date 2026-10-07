@@ -168,6 +168,7 @@ export const reporteCierreCaja = async (req: Request, res: Response): Promise<vo
     // recordset[5] = Detalle de Arqueo Transferencias
     // recordset[6] = Ventas a crédito de la caja (migración 004)
     // recordset[7] = Cobros de créditos recibidos en la caja (migración 004)
+    // recordset[8] = Devoluciones de ventas al contado pagadas desde la caja
 
     const recordsets = (result as typeof result & { recordsets?: any[] }).recordsets;
 
@@ -178,6 +179,7 @@ export const reporteCierreCaja = async (req: Request, res: Response): Promise<vo
       gastos: recordsets?.[1] ?? [],
       arqueoMoneda: recordsets?.[2] ?? [],
       tarjetasCredito: recordsets?.[3] ?? [],
+      devoluciones: recordsets?.[8] ?? [],
       tarjetasDebito: recordsets?.[4] ?? [],
       transferencias: recordsets?.[5] ?? [],
       ventasCredito: recordsets?.[6] ?? [],

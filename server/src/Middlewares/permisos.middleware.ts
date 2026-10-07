@@ -24,6 +24,8 @@ export const PERMISOS = {
   ABM: "ACCESO_ABM",
   TIMBRADOS: "ACCESO_TIMBRADOS",
   COBRANZAS: "ACCESO_COBRANZAS",
+  NC_DEVOLUCION: "ACCESO_NC_DEVOLUCION",
+  NC_MONTO: "ACCESO_NC_MONTO",
 } as const;
 
 export type Permiso = (typeof PERMISOS)[keyof typeof PERMISOS];

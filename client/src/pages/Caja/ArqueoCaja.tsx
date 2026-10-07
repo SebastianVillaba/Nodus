@@ -58,12 +58,15 @@ const ArqueoCaja: React.FC = () => {
     // Ventas a crédito (solo informativas, no entra dinero) y cobros de créditos (dinero recibido)
     const [totalVentasCredito, setTotalVentasCredito] = useState(0);
     const [totalCobros, setTotalCobros] = useState(0);
+    // Devoluciones de ventas al contado: como los gastos, ya salieron del cajón
+    const [totalDevoluciones, setTotalDevoluciones] = useState(0);
 
     // Lo que la cajera cuenta a mano
     const totalArqueado = totalEfectivo + totalMonedas + totalTarjetaCredito + totalTarjetaDebito + totalTransferencias;
-    // Total declarado al cierre: lo contado + los cobros de créditos del turno (se suman solos).
+    // Total declarado al cierre: solo lo que la cajera cuenta. Las cobranzas del turno deben estar en el cajón
+    // (las cuenta con el resto); el sistema las suma a lo esperado, así un faltante se ve como diferencia.
     // Los gastos NO se restan acá: esa plata ya salió del cajón y el sistema los descuenta de lo esperado.
-    const totalDeclarado = totalArqueado + totalCobros;
+    const totalDeclarado = totalArqueado;
 
     // Verificar estado de caja al cargar
     useEffect(() => {
@@ -304,7 +307,7 @@ const ArqueoCaja: React.FC = () => {
                                 <Grid size={{ xs: 6, sm: 4, md: 2 }}>
                                     <Box sx={{ textAlign: 'center', p: 1 }}>
                                         <Typography variant="subtitle2" color="text.secondary">
-                                            Ventas a Crédito (info)
+                                            Ventas a Crédito
                                         </Typography>
                                         <Typography variant="h6" color="secondary.main" fontWeight="bold">
                                             Gs. {formatCurrency(totalVentasCredito)}
@@ -326,13 +329,25 @@ const ArqueoCaja: React.FC = () => {
                         <Grid size={{ xs: 6, sm: 4, md: 2 }}>
                             <Box sx={{ textAlign: 'center', p: 1 }}>
                                 <Typography variant="subtitle2" color="text.secondary">
-                                    Gastos (ya salieron)
+                                    Gastos
                                 </Typography>
                                 <Typography variant="h6" color="error.main" fontWeight="bold">
                                     Gs. {formatCurrency(totalGastos)}
                                 </Typography>
                             </Box>
                         </Grid>
+                        {cajaAbierta && (
+                            <Grid size={{ xs: 6, sm: 4, md: 2 }}>
+                                <Box sx={{ textAlign: 'center', p: 1 }}>
+                                    <Typography variant="subtitle2" color="text.secondary">
+                                        Devoluciones
+                                    </Typography>
+                                    <Typography variant="h6" color="error.main" fontWeight="bold">
+                                        Gs. {formatCurrency(totalDevoluciones)}
+                                    </Typography>
+                                </Box>
+                            </Grid>
+                        )}
                         <Grid size={{ xs: 12, sm: 4, md: 2 }}>
                             <Box sx={{ textAlign: 'center', p: 1, backgroundColor: '#e3f2fd', borderRadius: 1 }}>
                                 <Typography variant="subtitle2" color="text.secondary" fontWeight="bold">
@@ -470,7 +485,7 @@ const ArqueoCaja: React.FC = () => {
                                     avatar={<RequestQuoteIcon color="secondary" />}
                                     title={
                                         <Typography variant="h6" fontWeight="bold">
-                                            🧾 Créditos y Cobros
+                                            🧾 Créditos, Cobros y Devoluciones
                                         </Typography>
                                     }
                                     sx={{ backgroundColor: '#ede7f6', borderBottom: '1px solid #d1c4e9' }}
@@ -481,6 +496,7 @@ const ArqueoCaja: React.FC = () => {
                                         idTerminalWeb={idTerminalWeb || 0}
                                         onTotalVentasCreditoChange={setTotalVentasCredito}
                                         onTotalCobrosChange={setTotalCobros}
+                                        onTotalDevolucionesChange={setTotalDevoluciones}
                                     />
                                 </CardContent>
                             </Card>

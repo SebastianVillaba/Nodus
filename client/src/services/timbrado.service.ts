@@ -5,8 +5,18 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 export type EstadoTimbradoCodigo =
   | 'VIGENTE' | 'POR_VENCER' | 'POR_AGOTARSE' | 'NO_INICIADO' | 'VENCIDO' | 'AGOTADO' | 'SIN_TIMBRADO';
 
+/** 1 = factura, 2 = nota de crédito */
+export type TipoComprobante = 1 | 2;
+
+export const NOMBRE_TIPO_COMPROBANTE: Record<TipoComprobante, string> = {
+  1: 'Factura',
+  2: 'Nota de Crédito',
+};
+
 export interface Timbrado {
   idFactura: number;
+  idTipoComprobante: TipoComprobante;
+  tipoComprobante: string;
   idSucursal: number;
   nombreSucursal: string;
   dsuc: string;
@@ -27,6 +37,7 @@ export interface Timbrado {
 
 export interface GuardarTimbradoRequest {
   idFactura: number; // 0 = nuevo
+  idTipoComprobante: TipoComprobante;
   idSucursal: number;
   dsuc: string;
   dcaja: string;
@@ -49,6 +60,7 @@ export interface EstadoTimbrado {
   fechaCaduca: string | null;
   diasParaVencer: number | null;
   numerosRestantes: number | null;
+  proximoNumero: string | null;
 }
 
 export const timbradoService = {
@@ -57,8 +69,8 @@ export const timbradoService = {
     return response.data.timbrados;
   },
 
-  estado: async (idTerminalWeb: number): Promise<EstadoTimbrado> => {
-    const response = await axios.get(`${API_BASE_URL}/timbrado/estado`, { params: { idTerminalWeb } });
+  estado: async (idTerminalWeb: number, idTipoComprobante: TipoComprobante = 1): Promise<EstadoTimbrado> => {
+    const response = await axios.get(`${API_BASE_URL}/timbrado/estado`, { params: { idTerminalWeb, idTipoComprobante } });
     return response.data.estado;
   },
 

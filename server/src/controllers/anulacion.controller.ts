@@ -12,8 +12,8 @@ const tienePermisoAnular = async (idUsuario: number, tipo: string): Promise<bool
     ] as any,
     isStoredProcedure: true
   });
-  // El SP retorna una fila con idUsuario si tiene permiso, o sin filas si no lo tiene
-  return !!result.recordset && result.recordset.length > 0;
+  // El SP devuelve una fila con tienePermiso (0/1) para todo usuario activo: hay que mirar el valor
+  return !!result.recordset?.[0]?.tienePermiso;
 };
 
 /**
@@ -61,7 +61,7 @@ export const verificarPermisoAnular = async (req: Request, res: Response): Promi
       return;
     }
 
-    const tiposValidos = ['FACT', 'COMPRA', 'REMISION', 'RECEPCION', 'AJUSTE', 'CARGA'];
+    const tiposValidos = ['FACT', 'COMPRA', 'REMISION', 'RECEPCION', 'AJUSTE', 'CARGA', 'COBRO', 'NC'];
     if (!tiposValidos.includes(tipo.toUpperCase())) {
       res.status(400).json({
         success: false,
@@ -223,5 +223,40 @@ export const anularCobroCredito = async (req: Request, res: Response): Promise<v
     res.status(200).json({ success: true, message: 'Recibo anulado correctamente' });
   } catch (error: any) {
     sendError(res, error, 'Error al anular el recibo');
+  }
+};
+
+/**
+ * Anula una nota de crédito (por devolución o por monto). El autorizador necesita el permiso
+ * anularNotaCredito (sp_permisoAnular tipo 'NC'). La devolución saca otra vez la mercadería del stock
+ * y, si la factura es a crédito, las cuotas recuperan lo que la nota les había rebajado.
+ *
+ * Body: { tipo: 'DEV' | 'MONTO', idDocumento, explica, usuarioAutorizador, passwordAutorizador }
+ */
+export const anularNotaCredito = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { tipo, idDocumento, explica } = req.body;
+
+    if ((tipo !== 'DEV' && tipo !== 'MONTO') || !Number(idDocumento) || !explica) {
+      res.status(400).json({ success: false, message: 'Faltan parámetros requeridos: tipo, idDocumento, explica' });
+      return;
+    }
+
+    const idUsuarioAutorizador = await obtenerAutorizador(req, res, 'NC');
+    if (idUsuarioAutorizador === null) return;
+
+    await executeRequest({
+      query: tipo === 'DEV' ? 'sp_anularNotaCredito' : 'sp_anularNotaCreditoMonto',
+      isStoredProcedure: true,
+      inputs: [
+        { name: tipo === 'DEV' ? 'idNotaCredito' : 'idNotaCreditoMonto', type: sql.Int, value: Number(idDocumento) },
+        { name: 'idUsuario', type: sql.Int, value: idUsuarioAutorizador },
+        { name: 'motivo', type: sql.VarChar(255), value: String(explica) },
+      ] as any,
+    });
+
+    res.status(200).json({ success: true, message: 'Nota de crédito anulada correctamente' });
+  } catch (error: any) {
+    sendError(res, error, 'Error al anular la nota de crédito');
   }
 };

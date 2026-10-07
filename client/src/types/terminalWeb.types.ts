@@ -4,6 +4,7 @@ export interface TerminalWeb {
     terminalToken: string;
     idSucursal: number;
     idFactura: number;
+    idFacturaNotaCredito?: number | null;
     idDepositoVenta: number;
     idDepositoCompra: number;
     idDepositoRemision: number;
@@ -14,6 +15,7 @@ export interface TerminalWeb {
     // Campos informativos
     nombreSucursal?: string;
     timbradoFactura?: string;
+    timbradoNotaCredito?: string | null;
     depVenta?: string;
     depCompra?: string;
     depRemision?: string;

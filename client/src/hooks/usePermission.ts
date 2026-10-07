@@ -19,10 +19,14 @@ export const usePermisos = () => {
     return permisos;
 };
 
+/** nombreSistema admite alternativas separadas por '|': 'ACCESO_NC_DEVOLUCION|ACCESO_NC_MONTO' */
+export const tienePermiso = (permisos: Set<string>, nombreSistema: string) =>
+    nombreSistema.split('|').some((p) => permisos.has(p));
+
 export const usePermission = (nombreSistema: string) => {
     const permisos = usePermisos();
     return {
-        hasPermission: permisos ? permisos.has(nombreSistema) : null,
+        hasPermission: permisos ? tienePermiso(permisos, nombreSistema) : null,
         loading: permisos === null,
     };
 };

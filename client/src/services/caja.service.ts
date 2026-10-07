@@ -366,13 +366,15 @@ export const cajaService = {
      */
     resumenCreditoCaja: async (idTerminalWeb: number): Promise<ResumenCreditoCaja> => {
         const response = await axios.get(`${API_URL}/caja/resumen-credito`, { params: { idTerminalWeb } });
-        return { ventasCredito: response.data.ventasCredito, cobros: response.data.cobros };
+        return { ventasCredito: response.data.ventasCredito, cobros: response.data.cobros, devoluciones: response.data.devoluciones ?? [] };
     },
 };
 
 export interface ResumenCreditoCaja {
     ventasCredito: { idVenta: number; nroFactura: string; cliente: string; fechaAlta: string; totalVenta: number }[];
     cobros: { idCobroCredito: number; nroRecibo: number; cliente: string; fechaCobro: string; totalCobrado: number }[];
+    // Devoluciones de ventas al contado: el dinero salió de la caja, se restan de lo esperado
+    devoluciones: { idNotaCredito: number; nroNotaCredito: string; cliente: string; fechaAlta: string; montoDevueltoCaja: number }[];
 }
 
 export default cajaService;

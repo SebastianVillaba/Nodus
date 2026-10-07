@@ -79,6 +79,12 @@ interface VentaCreditoItem {
   totalVenta: number;
 }
 
+interface DevolucionItem {
+  nroNotaCredito: string;
+  cliente: string;
+  montoDevueltoCaja: number;
+}
+
 interface CobroItem {
   nroRecibo: number;
   cliente: string;
@@ -111,7 +117,8 @@ const ConsultaArqueCaja: React.FC = () => {
   const [transferencias, setTransferencias] = useState<TransferenciaItem[]>([]);
   const [ventasCredito, setVentasCredito] = useState<VentaCreditoItem[]>([]);
   const [cobros, setCobros] = useState<CobroItem[]>([]);
-  const [totales, setTotales] = useState({ ventasContado: 0, cobranza: 0, gastos: 0 });
+  const [devoluciones, setDevoluciones] = useState<DevolucionItem[]>([]);
+  const [totales, setTotales] = useState({ ventasContado: 0, cobranza: 0, gastos: 0, devoluciones: 0 });
 
   // ── Navegación entre registros ──────────────
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
@@ -172,7 +179,8 @@ const ConsultaArqueCaja: React.FC = () => {
     setTransferencias([]);
     setVentasCredito([]);
     setCobros([]);
-    setTotales({ ventasContado: 0, cobranza: 0, gastos: 0 });
+    setDevoluciones([]);
+    setTotales({ ventasContado: 0, cobranza: 0, gastos: 0, devoluciones: 0 });
   };
 
   // ── Seleccionar arqueo de la lista ──────────
@@ -209,10 +217,12 @@ const ConsultaArqueCaja: React.FC = () => {
       setTransferencias(resp.transferencias || []);
       setVentasCredito(resp.ventasCredito || []);
       setCobros(resp.cobros || []);
+      setDevoluciones(resp.devoluciones || []);
       setTotales({
         ventasContado: resp.cabecera?.totalVentas || 0,
         cobranza: resp.cabecera?.totalCobranza || 0,
         gastos: resp.cabecera?.totalGastos || 0,
+        devoluciones: resp.cabecera?.totalDevoluciones || 0,
       });
     } catch (err: any) {
       setError(err.message || 'Error al obtener el detalle del arqueo');
@@ -248,6 +258,7 @@ const ConsultaArqueCaja: React.FC = () => {
           totalVentasCredito: datosReporte.resumen.totalVentasCredito || 0,
           totalCobranza: datosReporte.resumen.totalCobranza || 0,
           totalGastos: datosReporte.resumen.totalGastos || 0,
+          totalDevoluciones: datosReporte.resumen.totalDevoluciones || 0,
           totalMoneda: datosReporte.resumen.totalMoneda || 0,
           totalTarjetaDebito: datosReporte.resumen.totalTarjetaDebito || 0,
           totalTarjetaCredito: datosReporte.resumen.totalTarjetaCredito || 0,
@@ -263,7 +274,8 @@ const ConsultaArqueCaja: React.FC = () => {
         tarjetasDebito: datosReporte.tarjetasDebito || [],
         transferencias: datosReporte.transferencias || [],
         ventasCredito: datosReporte.ventasCredito || [],
-        cobros: datosReporte.cobros || []
+        cobros: datosReporte.cobros || [],
+        devoluciones: datosReporte.devoluciones || []
       };
 
       await ticketService.generarTicketCierreCaja(datosCierre);
@@ -495,17 +507,18 @@ const ConsultaArqueCaja: React.FC = () => {
                   ['+ Ventas Contado:', formatMoneda(totales.ventasContado)],
                   ['+ Cobranzas:', formatMoneda(totales.cobranza)],
                   ['- Gastos:', formatMoneda(totales.gastos)],
+                  ['- Devoluciones:', formatMoneda(totales.devoluciones)],
                   ['Saldo Sistema (Teórico):', formatMoneda(selectedArqueo?.montoSistema ?? 0)],
                   ['Saldo Real (Cajero):', formatMoneda(selectedArqueo?.montoContadoCajero ?? 0)],
                 ].map(([label, value], i) => (
                   <React.Fragment key={label}>
                     <Grid item xs={7}>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: i >= 4 ? 600 : 400 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: i >= 5 ? 600 : 400 }}>
                         {label}
                       </Typography>
                     </Grid>
                     <Grid item xs={5}>
-                      <Typography variant="body2" align="right" sx={{ fontWeight: i >= 4 ? 700 : 500 }}>
+                      <Typography variant="body2" align="right" sx={{ fontWeight: i >= 5 ? 700 : 500 }}>
                         {value}
                       </Typography>
                     </Grid>
@@ -713,6 +726,37 @@ const ConsultaArqueCaja: React.FC = () => {
                     </Table>
                   </TableContainer>
                   <Typography variant="caption" color="text.secondary">No ingresan dinero: no suman al saldo de la caja.</Typography>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  {sectionLabel('Devoluciones')}
+                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 150 }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }}>Nota</TableCell>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }}>Cliente</TableCell>
+                          <TableCell sx={{ fontWeight: 600, py: 0.5 }} align="right">Monto</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {devoluciones.map((x) => (
+                          <TableRow key={x.nroNotaCredito}>
+                            <TableCell>{x.nroNotaCredito}</TableCell>
+                            <TableCell>{x.cliente}</TableCell>
+                            <TableCell align="right">{formatMoneda(x.montoDevueltoCaja)}</TableCell>
+                          </TableRow>
+                        ))}
+                        {devoluciones.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} align="center" sx={{ py: 2 }}>
+                              <Typography variant="caption" color="text.disabled">Sin devoluciones</Typography>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <Typography variant="caption" color="text.secondary">Salieron de la caja: se restan del saldo teórico.</Typography>
                 </Grid>
               </Grid>
 

@@ -161,7 +161,8 @@ export const consultaInformacionArqueo = async (req: Request, res: Response): Pr
       tarjetaDebito: recordsets?.[4] ?? [],
       transferencias: recordsets?.[5] ?? [],
       ventasCredito: recordsets?.[6] ?? [],   // informativas: no suman al saldo de la caja
-      cobros: recordsets?.[7] ?? []           // cobros de créditos activos: suman al saldo teórico
+      cobros: recordsets?.[7] ?? [],          // cobros de créditos activos: suman al saldo teórico
+      devoluciones: recordsets?.[8] ?? []     // devoluciones de ventas al contado: restan del saldo teórico
     });
 
   } catch (error: any) {

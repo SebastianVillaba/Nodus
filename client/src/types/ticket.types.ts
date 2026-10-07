@@ -116,6 +116,7 @@ export interface DatosCierreCaja {
     totalVentasCredito?: number;
     totalCobranza: number;
     totalGastos: number;
+    totalDevoluciones?: number;
     totalMoneda?: number;
     totalTarjetaDebito?: number;
     totalTarjetaCredito?: number;
@@ -157,6 +158,12 @@ export interface DatosCierreCaja {
     nroRecibo: number;
     cliente: string;
     totalCobrado: number;
+  }>;
+  // Devoluciones de ventas al contado pagadas desde la caja
+  devoluciones?: Array<{
+    nroNotaCredito: string;
+    cliente: string;
+    montoDevueltoCaja: number;
   }>;
 }
 

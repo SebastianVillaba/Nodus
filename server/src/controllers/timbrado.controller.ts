@@ -5,14 +5,18 @@ import { getUserId } from '../Middlewares/auth.middleware';
 
 /**
  * Lista los timbrados (puntos de expedición) con su estado.
- * Query: soloActivos=1 para usarlo en combos (ej: asignar timbrado a una terminal).
+ * Query: soloActivos=1 para usarlo en combos (ej: asignar timbrado a una terminal);
+ * idTipoComprobante (1 = factura, 2 = nota de crédito) para filtrar por tipo.
  */
 export const listarTimbrados = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await executeRequest({
       query: 'sp_listarTimbrados',
       isStoredProcedure: true,
-      inputs: [{ name: 'soloActivos', type: sql.Bit, value: req.query.soloActivos === '1' }],
+      inputs: [
+        { name: 'soloActivos', type: sql.Bit, value: req.query.soloActivos === '1' },
+        { name: 'idTipoComprobante', type: sql.Int, value: Number(req.query.idTipoComprobante) || null },
+      ],
     });
     res.status(200).json({ success: true, timbrados: result.recordset });
   } catch (error: any) {
@@ -21,7 +25,8 @@ export const listarTimbrados = async (req: Request, res: Response): Promise<void
 };
 
 /**
- * Estado del timbrado de una terminal (vigencia, rango y alertas) para Facturación.
+ * Estado del talonario de una terminal (vigencia, rango y alertas).
+ * Query: idTipoComprobante = 1 (factura, por defecto) o 2 (nota de crédito).
  */
 export const estadoTimbrado = async (req: Request, res: Response): Promise<void> => {
   const idTerminalWeb = Number(req.query.idTerminalWeb);
@@ -34,7 +39,10 @@ export const estadoTimbrado = async (req: Request, res: Response): Promise<void>
     const result = await executeRequest({
       query: 'sp_estadoTimbrado',
       isStoredProcedure: true,
-      inputs: [{ name: 'idTerminalWeb', type: sql.Int, value: idTerminalWeb }],
+      inputs: [
+        { name: 'idTerminalWeb', type: sql.Int, value: idTerminalWeb },
+        { name: 'idTipoComprobante', type: sql.Int, value: Number(req.query.idTipoComprobante) === 2 ? 2 : 1 },
+      ],
     });
     res.status(200).json({ success: true, estado: result.recordset[0] });
   } catch (error: any) {
@@ -48,7 +56,7 @@ export const estadoTimbrado = async (req: Request, res: Response): Promise<void>
 export const guardarTimbrado = async (req: Request, res: Response): Promise<void> => {
   const {
     idFactura = 0, idSucursal, dsuc, dcaja, timbrado, fechaInicio, fechaCaduca,
-    nroDesde, nroHasta, proximoNumero, preImpreso = false, activo = true,
+    nroDesde, nroHasta, proximoNumero, preImpreso = false, activo = true, idTipoComprobante = 1,
   } = req.body;
 
   if (!idSucursal || !dsuc || !dcaja || !timbrado || !fechaInicio || !fechaCaduca || !nroDesde || !proximoNumero) {
@@ -74,6 +82,7 @@ export const guardarTimbrado = async (req: Request, res: Response): Promise<void
         { name: 'preImpreso', type: sql.Bit, value: Boolean(preImpreso) },
         { name: 'activo', type: sql.Bit, value: Boolean(activo) },
         { name: 'idUsuario', type: sql.Int, value: getUserId(req) },
+        { name: 'idTipoComprobante', type: sql.Int, value: Number(idTipoComprobante) || 1 },
       ],
     });
     res.status(200).json({ success: true, message: 'Timbrado guardado correctamente', idFactura: result.recordset[0]?.idFactura });

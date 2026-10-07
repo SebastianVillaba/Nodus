@@ -1,5 +1,6 @@
 import type { ItemFactura, DatosFactura, ItemTicket, DatosTicket, DatosTicketPedido, DatosCierreCaja, ItemTicketRemision, DatosTicketRemision, DatosTicketPedidosDia } from "../types/ticket.types";
 import type { DatosReciboCobro } from "./cobroCredito.service";
+import type { DatosNotaCredito } from "./notaCredito.service";
 import type jsPDF from "jspdf";
 
 
@@ -126,6 +127,7 @@ class TicketService {
         this.dibujarTransferencias(doc, datos);
         this.dibujarVentasCreditoCierreCaja(doc, datos);
         this.dibujarCobrosCierreCaja(doc, datos);
+        this.dibujarDevolucionesCierreCaja(doc, datos);
         this.dibujarGastosCierreCaja(doc, datos);
         this.dibujarFooterCierreCaja(doc);
 
@@ -499,6 +501,7 @@ class TicketService {
         this.dibujarFilaResumen(doc, 'Total Ventas Contado:', datos.resumen.totalVentas);
         this.dibujarFilaResumen(doc, 'Total Cobranza:', datos.resumen.totalCobranza);
         this.dibujarFilaResumen(doc, 'Total Gastos:', datos.resumen.totalGastos);
+        this.dibujarFilaResumen(doc, 'Total Devoluciones:', datos.resumen.totalDevoluciones || 0);
 
         if (datos.resumen.totalMoneda !== undefined && datos.resumen.totalMoneda !== null) {
             this.dibujarFilaResumen(doc, 'Total Efectivo (Arqueo):', datos.resumen.totalMoneda);
@@ -673,6 +676,14 @@ class TicketService {
         }
     }
 
+    private dibujarDevolucionesCierreCaja(doc: jsPDF, datos: DatosCierreCaja): void {
+        if (datos.devoluciones && datos.devoluciones.length > 0) {
+            this.dibujarSeccionCierre(doc, 'DEVOLUCIONES',
+                datos.devoluciones.map(d => ({ texto: `${d.nroNotaCredito} ${d.cliente || ''}`, monto: d.montoDevueltoCaja })),
+                'Salieron de la caja: se restan del saldo');
+        }
+    }
+
     private dibujarGastosCierreCaja(doc: jsPDF, datos: DatosCierreCaja): void {
         if (datos.gastos && datos.gastos.length > 0) {
             doc.setFont('helvetica', 'bold');
@@ -720,10 +731,12 @@ class TicketService {
         altura += 5; // Total Ventas
         altura += 5; // Total Cobranza
         altura += 5; // Total Gastos
+        altura += 5; // Total Devoluciones
 
         // Ventas a crédito (con nota) y cobros: título + filas + total + separador
         if (datos.ventasCredito && datos.ventasCredito.length > 0) altura += 5 + datos.ventasCredito.length * 4 + 4 + 4 + 5;
         if (datos.cobros && datos.cobros.length > 0) altura += 5 + datos.cobros.length * 4 + 4 + 5;
+        if (datos.devoluciones && datos.devoluciones.length > 0) altura += 5 + datos.devoluciones.length * 4 + 4 + 4 + 5;
         
         if (datos.resumen.totalMoneda !== undefined && datos.resumen.totalMoneda !== null) altura += 5;
         if (datos.resumen.totalTarjetaDebito !== undefined && datos.resumen.totalTarjetaDebito !== null) altura += 5;
@@ -1207,6 +1220,132 @@ class FacturaService {
         // Abrir el PDF en una nueva ventana para imprimir
         doc.autoPrint();
         this.imprimirEnIframeOculto(doc);
+    }
+
+
+    /**
+     * Imprime una nota de crédito (por devolución o por monto) con el mismo formato de la factura,
+     * más la factura que modifica y el motivo.
+     */
+    public async generarNotaCredito(datos: DatosNotaCredito): Promise<void> {
+        const jsPDFClass = (await import("jspdf")).default;
+        const doc = new jsPDFClass({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: [this.ANCHO_TICKET, 306.3]
+        });
+        const c = datos.cabecera;
+
+        this.posY = 10;
+
+        this.dibujarEncabezado(doc, {
+            nombreFantasia: c.nombreFantasia,
+            nombre: c.nombre || c.nombreFantasia,
+            rubro: '',
+            ruc: c.ruc,
+            direccion: c.direccionEmpresa || '',
+            telefono: c.telefonoEmpresa || '',
+        } as DatosFactura);
+
+        // Título y número
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(c.noImp ? 'DEVOLUCIÓN' : 'NOTA DE CRÉDITO', this.ANCHO_TICKET / 2, this.posY, { align: 'center' });
+        this.posY += 5;
+        doc.setFontSize(10);
+        doc.text(c.noImp ? `Comprobante interno Nro.: ${c.idDocumento}` : `Nro.: ${c.nroNotaCredito}`, this.ANCHO_TICKET / 2, this.posY, { align: 'center' });
+        this.posY += 5;
+        if (!c.activo) {
+            doc.text('*** ANULADA ***', this.ANCHO_TICKET / 2, this.posY, { align: 'center' });
+            this.posY += 5;
+        }
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        if (!c.noImp) {
+            doc.text(`Timbrado: ${c.timbrado}`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+            doc.text(`Vigencia: ${this.formatearSoloFecha(c.fechaInicioVigencia ?? '')} al ${this.formatearSoloFecha(c.fechaFinVigencia ?? '')}`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+        }
+        doc.text(`Fecha/Hora: ${this.formatearFecha(new Date(c.fechaHora))}`, this.MARGEN_IZQ, this.posY);
+        this.posY += 5;
+        this.dibujarLinea(doc);
+
+        // Cliente y comprobante que modifica
+        this.dividirTexto(`Cliente: ${c.cliente}`, 45).forEach((linea) => {
+            doc.text(linea, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+        });
+        doc.text(`RUC: ${c.rucCliente}`, this.MARGEN_IZQ, this.posY);
+        this.posY += 5;
+        if (c.noImp) {
+            doc.text(`Venta: Id ${c.idVenta} (${c.condicionVenta})`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+            doc.text(`Fecha venta: ${this.formatearSoloFecha(c.fechaFactura)}`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+        } else {
+            doc.text(`Factura: ${c.nroFactura} (${c.condicionVenta})`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+            doc.text(`Fecha factura: ${this.formatearSoloFecha(c.fechaFactura)}  Timb.: ${c.timbradoFactura}`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+        }
+        this.dividirTexto(`Motivo: ${c.motivo}`, 45).forEach((linea) => {
+            doc.text(linea, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+        });
+        this.dibujarLinea(doc);
+
+        this.dibujarEncabezadoTabla(doc);
+        this.dibujarItems(doc, datos.detalle.map((d) => ({
+            codigo: Number(d.codigo) || 0,
+            cantidad: Number(d.cantidad),
+            mercaderia: d.mercaderia,
+            precio: d.precio,
+            subtotal: d.subtotal,
+            porcentajeImpuesto: Number(d.porcentajeImpuesto),
+        }) as ItemFactura));
+
+        this.dibujarTotales(doc, { total: c.total } as DatosFactura);
+        if (!c.noImp) this.dibujarLiquidacionIVA(doc, {
+            gravada10: Math.round(c.gravada10),
+            gravada5: Math.round(c.gravada5),
+            exenta: Math.round(c.exenta),
+            iva10: Math.round(c.iva10),
+            iva5: Math.round(c.iva5),
+            totalIva: Math.round(c.totalIva),
+        } as DatosFactura);
+
+        if (c.montoDevueltoCaja > 0) {
+            this.dibujarLinea(doc);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.text(`Devuelto en efectivo: ${this.formatearNumero(c.montoDevueltoCaja, 0)}`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+        }
+
+        if (c.montoAplicadoCredito > 0) {
+            this.dibujarLinea(doc);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.text(`Aplicado a cuotas de la factura: ${this.formatearNumero(c.montoAplicadoCredito, 0)}`, this.MARGEN_IZQ, this.posY);
+            this.posY += 5;
+        }
+
+        this.dibujarLinea(doc);
+        doc.setFontSize(8);
+        doc.text(`Emitido por: ${this.truncarTexto(c.usuario, 40)}`, this.MARGEN_IZQ, this.posY);
+        this.posY += 12;
+        doc.text('Firma y aclaración del cliente: ____________', this.MARGEN_IZQ, this.posY);
+
+        doc.autoPrint();
+        this.imprimirEnIframeOculto(doc);
+    }
+
+    private formatearSoloFecha(fecha: string | Date): string {
+        const texto = String(fecha ?? '').substring(0, 10);
+        const [anio, mes, dia] = texto.split('-');
+        return dia && mes && anio ? `${dia}/${mes}/${anio}` : texto;
     }
 
 

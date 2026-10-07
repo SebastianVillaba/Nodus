@@ -3,6 +3,7 @@ export interface CrearTerminalWebRequest {
     terminalToken: string;
     idSucursal: number;
     idFactura: number;
+    idFacturaNotaCredito?: number | null;
     idDepositoVenta: number;
     idDepositoCompra: number;
     idDepositoRemision: number;
@@ -15,6 +16,7 @@ export interface ModificarTerminalWebRequest {
     terminalToken: string;
     idSucursal: number;
     idFactura: number;
+    idFacturaNotaCredito?: number | null;
     idDepositoVenta: number;
     idDepositoCompra: number;
     idDepositoRemision: number;
@@ -37,11 +39,13 @@ export interface TerminalWebDetalle {
     activo: boolean;
     idSucursal: number;
     idFactura: number;
+    idFacturaNotaCredito?: number | null;
     idDepositoVenta: number;
     idDepositoCompra: number;
     idDepositoRemision: number;
     nombreSucursal: string;
     timbradoFactura: string;
+    timbradoNotaCredito?: string | null;
     depVenta: string;
     depCompra: string;
     depRemision: string;

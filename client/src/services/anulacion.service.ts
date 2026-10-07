@@ -28,6 +28,14 @@ export interface AnularCobroCreditoRequest {
   passwordAutorizador: string;
 }
 
+export interface AnularNotaCreditoRequest {
+  tipo: 'DEV' | 'MONTO';
+  idDocumento: number;
+  explica: string;
+  usuarioAutorizador: string;
+  passwordAutorizador: string;
+}
+
 export const anulacionService = {
   /**
    * Verifica si un usuario tiene permiso para anular según el tipo indicado.
@@ -70,6 +78,15 @@ export const anulacionService = {
    */
   anularCobroCredito: async (data: AnularCobroCreditoRequest): Promise<any> => {
     const response = await axios.post(`${API_BASE_URL}/anulacion/cobro-credito`, data);
+    return response.data;
+  },
+
+  /**
+   * Anula una nota de crédito (por devolución o por monto).
+   * Llama a POST /api/anulacion/nota-credito
+   */
+  anularNotaCredito: async (data: AnularNotaCreditoRequest): Promise<any> => {
+    const response = await axios.post(`${API_BASE_URL}/anulacion/nota-credito`, data);
     return response.data;
   },
 

@@ -36,8 +36,10 @@ import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import ListSubheader from '@mui/material/ListSubheader';
 import ApiIcon from '@mui/icons-material/Api';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
+import AssignmentReturnIcon from '@mui/icons-material/AssignmentReturn';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { clearSession } from '../../services/auth';
-import { usePermisos } from '../../hooks/usePermission';
+import { usePermisos, tienePermiso } from '../../hooks/usePermission';
 
 const drawerWidth = 240;
 
@@ -117,7 +119,7 @@ interface SubMenuItem {
   text: string;
   path: string;
   icon?: React.ReactNode;
-  permiso?: string; // nombreSistema requerido; sin permiso = visible para todos
+  permiso?: string; // nombreSistema requerido ('A|B' = alcanza con uno); sin permiso = visible para todos
 }
 
 interface MenuItem {
@@ -180,22 +182,23 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       label: 'Movimientos',
       items: [
         {
-          text: 'Facturación',
-          path: '/facturacion',
-          permiso: 'ACCESO_VENTAS',
-          icon: <ReceiptIcon />,
+          text: 'Clientes',
+          icon: <PeopleIcon />,
+          subItems: [
+            { text: 'Facturación', path: '/facturacion', icon: <ReceiptIcon />, permiso: 'ACCESO_VENTAS' },
+            { text: 'Pedidos', path: '/pedidos', icon: <ReceiptLongIcon />, permiso: 'ACCESO_PEDIDOS' },
+            { text: 'Cobro de Créditos', path: '/cobranzas/cobranza', icon: <RequestQuoteIcon />, permiso: 'ACCESO_COBRANZAS' },
+            { text: 'NC por Devolución', path: '/notas-credito/devolucion', icon: <AssignmentReturnIcon />, permiso: 'ACCESO_NC_DEVOLUCION' },
+            { text: 'NC por Monto', path: '/notas-credito/monto', icon: <RequestQuoteIcon />, permiso: 'ACCESO_NC_MONTO' },
+          ],
         },
         {
-          text: 'Pedidos',
-          path: '/pedidos',
-          permiso: 'ACCESO_PEDIDOS',
-          icon: <ReceiptLongIcon />,
-        },
-        {
-          text: 'Cobro de Créditos',
-          path: '/cobranzas/cobranza',
-          permiso: 'ACCESO_COBRANZAS',
-          icon: <RequestQuoteIcon />,
+          text: 'Proveedores',
+          icon: <LocalShippingIcon />,
+          subItems: [
+            { text: 'Compras', path: '/compras', icon: <ShoppingCartIcon />, permiso: 'ACCESO_COMPRAS' },
+            // Nota de Crédito de Proveedor: se agrega cuando esté el módulo
+          ],
         },
         {
           text: 'Arqueo de Caja',
@@ -203,12 +206,6 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           subItems: [
             { text: 'Arqueo de Caja', path: '/caja/arqueo', icon: <ReceiptLongIcon />, permiso: 'ACCESO_CAJA' },
           ],
-        },
-        {
-          text: 'Compras',
-          path: '/compras',
-          permiso: 'ACCESO_COMPRAS',
-          icon: <ShoppingCartIcon />,
         },
         {
           text: 'Ajuste / Stock Inicial',
@@ -266,6 +263,14 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           icon: <RequestQuoteIcon />,
         },
         {
+          text: 'Consulta Notas de Crédito',
+          icon: <AssignmentReturnIcon />,
+          subItems: [
+            { text: 'Por Devolución', path: '/consultas/notas-credito-devolucion', icon: <AssignmentReturnIcon />, permiso: 'ACCESO_NC_DEVOLUCION' },
+            { text: 'Por Monto', path: '/consultas/notas-credito-monto', icon: <RequestQuoteIcon />, permiso: 'ACCESO_NC_MONTO' },
+          ],
+        },
+        {
           text: 'Historial de Cliente',
           path: '/consultas/historial-cliente',
           permiso: 'ACCESO_HISTORIAL_CLIENTE',
@@ -320,7 +325,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   // Menú filtrado por los permisos del usuario: se ocultan items, submenús y secciones vacías
   const menuVisible = React.useMemo<MenuSection[]>(() => {
     if (!permisos) return [];
-    const puedeVer = (permiso?: string) => !permiso || permisos.has(permiso);
+    const puedeVer = (permiso?: string) => !permiso || tienePermiso(permisos, permiso);
 
     return menuSections
       .map((section) => ({

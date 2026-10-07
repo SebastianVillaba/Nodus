@@ -110,22 +110,40 @@ export default function TerminalWebForm({ formData, setFormData, isNewMode }: Te
                     {!formData.idSucursal && <Typography variant="caption" color="error" sx={{ ml: 2 }}>Campo obligatorio</Typography>}
                 </FormControl>
 
-                {/* Punto de Expedición (Factura) */}
+                {/* Talonario de facturas */}
                 <FormControl fullWidth size="small" error={!formData.idFactura}>
-                    <InputLabel>Punto de Expedición</InputLabel>
+                    <InputLabel>Talonario de Facturas</InputLabel>
                     <Select
                         value={formData.idFactura || ''}
                         onChange={handleChange('idFactura')}
-                        label="Punto de Expedición"
+                        label="Talonario de Facturas"
                         disabled={loading}
                     >
-                        {puntosExpedicion.map((punto) => (
+                        {puntosExpedicion.filter((punto) => punto.idTipoComprobante === 1).map((punto) => (
                             <MenuItem key={punto.idFactura} value={punto.idFactura}>
                                 {punto.puntoExpedicion} · Timbrado {punto.timbrado} ({punto.nombreSucursal})
                             </MenuItem>
                         ))}
                     </Select>
                     {!formData.idFactura && <Typography variant="caption" color="error" sx={{ ml: 2 }}>Campo obligatorio</Typography>}
+                </FormControl>
+
+                {/* Talonario de notas de crédito (opcional: sin él la terminal no emite notas de crédito) */}
+                <FormControl fullWidth size="small">
+                    <InputLabel>Talonario de Notas de Crédito</InputLabel>
+                    <Select
+                        value={formData.idFacturaNotaCredito || ''}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, idFacturaNotaCredito: e.target.value ? Number(e.target.value) : null }))}
+                        label="Talonario de Notas de Crédito"
+                        disabled={loading}
+                    >
+                        <MenuItem value=""><em>Sin asignar</em></MenuItem>
+                        {puntosExpedicion.filter((punto) => punto.idTipoComprobante === 2).map((punto) => (
+                            <MenuItem key={punto.idFactura} value={punto.idFactura}>
+                                {punto.puntoExpedicion} · Timbrado {punto.timbrado} ({punto.nombreSucursal})
+                            </MenuItem>
+                        ))}
+                    </Select>
                 </FormControl>
 
                 {/* Deposito Venta */}
