@@ -18,6 +18,7 @@ export interface Usuario {
     anularCargaProducto?: boolean;
     anularCobro?: boolean;
     anularNotaCredito?: boolean;
+    anularNotaCreditoProveedor?: boolean;
 }
 
 export interface UsuarioSearchResult {

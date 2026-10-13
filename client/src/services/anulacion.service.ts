@@ -36,6 +36,14 @@ export interface AnularNotaCreditoRequest {
   passwordAutorizador: string;
 }
 
+export interface AnularCompraRequest {
+  idCompra: number;
+  noFiscal: boolean;
+  explica: string;
+  usuarioAutorizador: string;
+  passwordAutorizador: string;
+}
+
 export const anulacionService = {
   /**
    * Verifica si un usuario tiene permiso para anular según el tipo indicado.
@@ -87,6 +95,24 @@ export const anulacionService = {
    */
   anularNotaCredito: async (data: AnularNotaCreditoRequest): Promise<any> => {
     const response = await axios.post(`${API_BASE_URL}/anulacion/nota-credito`, data);
+    return response.data;
+  },
+
+  /**
+   * Anula una compra (fiscal o no fiscal).
+   * Llama a POST /api/anulacion/compra
+   */
+  anularCompra: async (data: AnularCompraRequest): Promise<any> => {
+    const response = await axios.post(`${API_BASE_URL}/anulacion/compra`, data);
+    return response.data;
+  },
+
+  /**
+   * Anula una nota de crédito de proveedor (por devolución o por monto).
+   * Llama a POST /api/anulacion/nota-credito-proveedor
+   */
+  anularNotaCreditoProveedor: async (data: AnularNotaCreditoRequest): Promise<any> => {
+    const response = await axios.post(`${API_BASE_URL}/anulacion/nota-credito-proveedor`, data);
     return response.data;
   },
 

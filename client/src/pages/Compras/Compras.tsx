@@ -28,9 +28,10 @@ import { comprasService } from '../../services/compras.service';
 import type { DetalleCompraTmp } from '../../services/compras.service';
 import { productoService } from '../../services/producto.service';
 import RequirePermission from '../../components/RequirePermission';
+import { getErrorMessage } from '../../services/httpError';
 
 export default function Compras() {
-    const { idTerminalWeb } = useTerminal();
+    const { idTerminalWeb, idSucursal, idDepositoCompra } = useTerminal();
 
     // Estados para Cabecera 
     const [proveedor, setProveedor] = useState<any>(null);
@@ -104,7 +105,6 @@ export default function Compras() {
             try {
                 const data = await comprasService.consultarDetalleTemporal(idTerminalWeb);
                 setDetalles(data);
-                console.log("Estos son los detalles traidos desde la base de datos: ", data);
             } catch (error) {
                 console.error("Error cargando detalles", error);
             }
@@ -238,7 +238,7 @@ export default function Compras() {
                 idTerminalWeb,
                 idProveedor: proveedor ? proveedor.idProveedor : 0, // Asumiendo 0 o null si no hay proveedor, aunque debería haber
                 idProducto: producto.idProducto,
-                idDeposito: 1, // Default por ahora
+                idDeposito: idDepositoCompra, // el servidor usa siempre el depósito de compras de la terminal
                 cantidad,
                 bonificacion,
                 costoTotal,
@@ -266,7 +266,7 @@ export default function Compras() {
 
         } catch (error) {
             console.error("Error agregando detalle", error);
-            alert("Error al agregar detalle");
+            alert(getErrorMessage(error, "Error al agregar detalle"));
         }
     };
 
@@ -317,8 +317,8 @@ export default function Compras() {
         try {
             const compra = {
                 idTerminalWeb,
-                idSucursal: 1, // Default
-                idPersonaJur: 1, // Default
+                idSucursal, // el servidor toma sucursal y empresa de la terminal
+                idPersonaJur: 0,
                 idProveedor: proveedor.idProveedor, // Usar idProveedor correcto
                 idTipoCompra: 1, // Contado/Credito? Default 1
                 dsuc,
@@ -331,13 +331,11 @@ export default function Compras() {
                 vence: fecha, // Default hoy
                 total: totalFactura,
                 habilitarCompra: habilitar, // Usar el valor seleccionado en el modal
-                idUsuarioAlta: 1 // Default
+                idUsuarioAlta: 0 // el servidor usa el usuario autenticado
             };
 
-            console.log("Estos son los datos de la compra: ", compra);
-
-            await comprasService.guardarCompra(compra);
-            alert('Compra guardada correctamente');
+            const guardada = await comprasService.guardarCompra(compra);
+            alert(`Compra ${guardada.idCompra ?? ''} guardada correctamente${habilitar ? ' (no fiscal)' : ''}. La mercadería ingresó al stock.`);
 
             // Limpiar todo
             setProveedor(null);
@@ -351,7 +349,7 @@ export default function Compras() {
 
         } catch (error) {
             console.error("Error guardando compra", error);
-            alert("Error al guardar la compra");
+            alert(getErrorMessage(error, "Error al guardar la compra"));
         }
     };
 
@@ -443,6 +441,7 @@ export default function Compras() {
                                             value={dsuc}
                                             onChange={handleCabeceraChange}
                                             name="dsuc"
+                                            label="Est."
                                             inputRef={dsucRef}
                                             sx={{ width: '50%' }}
                                             onKeyPress={(e) => {
@@ -458,6 +457,7 @@ export default function Compras() {
                                             value={dcaja}
                                             onChange={handleCabeceraChange}
                                             name="dcaja"
+                                            label="Pto."
                                             inputRef={dcajaRef}
                                             sx={{ width: '50%' }}
                                             onKeyPress={(e) => {
@@ -473,6 +473,7 @@ export default function Compras() {
                                             value={factura}
                                             onChange={handleCabeceraChange}
                                             name="factura"
+                                            label="Nro. factura"
                                             inputRef={facturaRef}
                                             sx={{ width: '80%' }}
                                             onKeyPress={(e) => {
@@ -505,6 +506,9 @@ export default function Compras() {
                                     <TextField
                                         fullWidth
                                         type='date'
+                                        label="Fecha factura"
+                                        InputLabelProps={{ shrink: true }}
+                                        inputProps={{ max: new Date().toISOString().split('T')[0] }}
                                         size="small"
                                         value={fecha}
                                         inputRef={fechaRef}
@@ -720,8 +724,8 @@ export default function Compras() {
                                 <TableCell align="right">Costo</TableCell>
                                 <TableCell align="right">Precio</TableCell>
                                 <TableCell align="right">Exenta</TableCell>
-                                <TableCell align="right">Grav. 5%</TableCell>
-                                <TableCell align="right">Grav. 10%</TableCell>
+                                <TableCell align="right">IVA 5%</TableCell>
+                                <TableCell align="right">IVA 10%</TableCell>
                                 <TableCell align="right">Subtotal</TableCell>
                                 <TableCell align="center">Acción</TableCell>
                             </TableRow>

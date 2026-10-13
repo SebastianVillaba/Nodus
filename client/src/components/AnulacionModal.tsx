@@ -24,10 +24,14 @@ interface AnulacionModalProps {
   idCobroCredito?: number;
   idNotaCredito?: number;
   tipoNotaCredito?: 'DEV' | 'MONTO';
+  idCompra?: number;
+  /** Compra no fiscal (cco) */
+  noFiscal?: boolean;
   tipoVenta?: string;
   onSuccess: () => void;
   imp?: boolean;
-  tipoMovimiento?: 'VENTA' | 'CARGA' | 'COBRO' | 'NC';
+  /** NC = nota de crédito a cliente, NCP = nota de crédito de proveedor (ambas con idNotaCredito + tipoNotaCredito) */
+  tipoMovimiento?: 'VENTA' | 'CARGA' | 'COBRO' | 'NC' | 'COMPRA' | 'NCP';
 }
 
 const AnulacionModal: React.FC<AnulacionModalProps> = ({
@@ -38,6 +42,8 @@ const AnulacionModal: React.FC<AnulacionModalProps> = ({
   idCobroCredito,
   idNotaCredito,
   tipoNotaCredito = 'DEV',
+  idCompra,
+  noFiscal = false,
   tipoVenta,
   onSuccess,
   imp = true,
@@ -55,7 +61,8 @@ const AnulacionModal: React.FC<AnulacionModalProps> = ({
 
   const idMovimientoActual = tipoMovimiento === 'CARGA' ? idCargaProducto
     : tipoMovimiento === 'COBRO' ? idCobroCredito
-    : tipoMovimiento === 'NC' ? idNotaCredito
+    : tipoMovimiento === 'NC' || tipoMovimiento === 'NCP' ? idNotaCredito
+    : tipoMovimiento === 'COMPRA' ? idCompra
     : idVenta;
 
   // Reset state when opening modal
@@ -103,7 +110,29 @@ const AnulacionModal: React.FC<AnulacionModalProps> = ({
         passwordAutorizador: password,
       };
 
-      if (tipoMovimiento === 'NC') {
+      if (tipoMovimiento === 'COMPRA') {
+        if (!idCompra) {
+          throw new Error('Compra no especificada.');
+        }
+
+        await anulacionService.anularCompra({
+          idCompra,
+          noFiscal,
+          explica: reason.trim(),
+          ...autorizador,
+        });
+      } else if (tipoMovimiento === 'NCP') {
+        if (!idNotaCredito) {
+          throw new Error('Nota de crédito no especificada.');
+        }
+
+        await anulacionService.anularNotaCreditoProveedor({
+          tipo: tipoNotaCredito,
+          idDocumento: idNotaCredito,
+          explica: reason.trim(),
+          ...autorizador,
+        });
+      } else if (tipoMovimiento === 'NC') {
         if (!idNotaCredito) {
           throw new Error('Nota de crédito no especificada.');
         }

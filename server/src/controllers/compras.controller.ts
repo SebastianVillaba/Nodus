@@ -153,9 +153,6 @@ export const guardarCompra = async (req: Request, res: Response) => {
         idUsuarioAlta
     }: IGuardarCompraDTO = req.body;
 
-    console.log("Estos son los datos de la compra: ", req.body);
-
-
     try {
         const result = await executeRequest({
             query: 'sp_guardarCompra',
@@ -180,9 +177,8 @@ export const guardarCompra = async (req: Request, res: Response) => {
             ]
         });
 
-        // Si el SP retorna algo (ej: ID de la compra), se puede devolver.
-        // Asumimos éxito si no hay error.
-        res.status(200).json({ message: 'Compra guardada correctamente.', data: result.recordset });
+        const compra = result.recordset?.[0];
+        res.status(200).json({ message: 'Compra guardada correctamente.', idCompra: compra?.idCompra, noFiscal: compra?.noFiscal, data: result.recordset });
     } catch (error: any) {
         sendError(res, error, 'Error al guardar compra');
     }
@@ -200,8 +196,6 @@ export const buscarProducto = async (req: Request, res: Response) => {
             ]
         });
         res.status(200).json(result.recordset);
-        console.log(result.recordset);
-        
     } catch (error: any) {
         sendError(res, error, 'Error al buscar producto');
     }
@@ -218,5 +212,77 @@ export const buscarProveedor = async (req: Request, res: Response) => {
         res.status(200).json(result.recordset);
     } catch (error: any) {
         sendError(res, error, 'Error al buscar los proveedores');
+    }
+};
+
+const enteroPositivo = (valor: unknown): number | null => {
+    const n = Number(valor);
+    return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+const esVerdadero = (valor: unknown) => valor === true || valor === 1 || valor === '1' || valor === 'true';
+
+/**
+ * Consulta de compras (hasta 500). Query: desde, hasta, proveedor (nombre o RUC), dsuc, dcaja, dfactu, idCompra,
+ * noFiscal (1 = no fiscales, 0 = fiscales, sin enviar = todas), soloActivas.
+ */
+export const listarCompras = async (req: Request, res: Response) => {
+    const dfactu = enteroPositivo(req.query.dfactu);
+    try {
+        const result = await executeRequest({
+            query: 'sp_listarCompras',
+            isStoredProcedure: true,
+            inputs: [
+                { name: 'desde', type: sql.Date, value: req.query.desde || null },
+                { name: 'hasta', type: sql.Date, value: req.query.hasta || null },
+                { name: 'proveedor', type: sql.VarChar(60), value: String(req.query.proveedor ?? '').trim().slice(0, 60) || null },
+                { name: 'dsuc', type: sql.Numeric(3, 0), value: dfactu ? enteroPositivo(req.query.dsuc) : null },
+                { name: 'dcaja', type: sql.Numeric(3, 0), value: dfactu ? enteroPositivo(req.query.dcaja) : null },
+                { name: 'dfactu', type: sql.Numeric(7, 0), value: dfactu },
+                { name: 'idCompra', type: sql.Int, value: enteroPositivo(req.query.idCompra) },
+                { name: 'noFiscal', type: sql.Bit, value: req.query.noFiscal === undefined || req.query.noFiscal === '' ? null : esVerdadero(req.query.noFiscal) },
+                { name: 'soloActivas', type: sql.Bit, value: esVerdadero(req.query.soloActivas) },
+            ]
+        });
+        res.status(200).json({ success: true, compras: result.recordset });
+    } catch (error: any) {
+        sendError(res, error, 'Error al listar las compras');
+    }
+};
+
+/**
+ * Una compra: cabecera, detalle (con lo devuelto al proveedor y el stock actual), disponible por IVA y notas de crédito.
+ * Params: id. Query: noFiscal (1 = compra no fiscal).
+ */
+export const consultarCompra = async (req: Request, res: Response) => {
+    const idCompra = enteroPositivo(req.params.id);
+    if (!idCompra) {
+        res.status(400).json({ success: false, message: 'Compra inválida' });
+        return;
+    }
+    try {
+        const result = await executeRequest({
+            query: 'sp_consultaCompra',
+            isStoredProcedure: true,
+            inputs: [
+                { name: 'idCompra', type: sql.Int, value: idCompra },
+                { name: 'noFiscal', type: sql.Bit, value: esVerdadero(req.query.noFiscal) },
+            ]
+        });
+        const recordsets = (result as { recordsets?: any[][] }).recordsets ?? [];
+        const cabecera = recordsets[0]?.[0];
+        if (!cabecera) {
+            res.status(404).json({ success: false, message: 'No se encontró la compra' });
+            return;
+        }
+        res.status(200).json({
+            success: true,
+            cabecera,
+            detalle: recordsets[1] ?? [],
+            impuestos: recordsets[2] ?? [],
+            notas: recordsets[3] ?? [],
+        });
+    } catch (error: any) {
+        sendError(res, error, 'Error al consultar la compra');
     }
 };

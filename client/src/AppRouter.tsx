@@ -38,6 +38,10 @@ const ConsultaCobranzas = lazy(() => import('./pages/Consultas/ConsultaCobranzas
 const NotaCreditoDevolucion = lazy(() => import('./pages/NotasCredito/NotaCreditoDevolucion'));
 const NotaCreditoMonto = lazy(() => import('./pages/NotasCredito/NotaCreditoMonto'));
 const ConsultaNotasCredito = lazy(() => import('./pages/Consultas/ConsultaNotasCredito'));
+const NotaCreditoProveedorDevolucion = lazy(() => import('./pages/NotasCreditoProveedor/NotaCreditoProveedorDevolucion'));
+const NotaCreditoProveedorMonto = lazy(() => import('./pages/NotasCreditoProveedor/NotaCreditoProveedorMonto'));
+const ConsultaNotasCreditoProveedor = lazy(() => import('./pages/Consultas/ConsultaNotasCreditoProveedor'));
+const ConsultaCompras = lazy(() => import('./pages/Consultas/ConsultaCompras'));
 const Reportes = lazy(() => import('./pages/Reportes/Reportes'));
 const CrearOferta = lazy(() => import('./pages/Ofertas/CrearOferta'));
 const VerOfertas = lazy(() => import('./pages/Ofertas/VerOfertas'));
@@ -113,6 +117,10 @@ const AppRouter: React.FC = () => {
             <Route path="devolucion" element={conPermiso('ACCESO_NC_DEVOLUCION', <NotaCreditoDevolucion />)} />
             <Route path="monto" element={conPermiso('ACCESO_NC_MONTO', <NotaCreditoMonto />)} />
           </Route>
+          <Route path="notas-credito-proveedor">
+            <Route path="devolucion" element={conPermiso('ACCESO_NC_PROVEEDOR_DEVOLUCION', <NotaCreditoProveedorDevolucion />)} />
+            <Route path="monto" element={conPermiso('ACCESO_NC_PROVEEDOR_MONTO', <NotaCreditoProveedorMonto />)} />
+          </Route>
           <Route path="compras" element={<Compras />} />
           <Route path="remisiones" element={<Remisiones />} />
           <Route path="recepciones-pendientes" element={<RecepcionesPendientes />} />
@@ -141,6 +149,9 @@ const AppRouter: React.FC = () => {
             <Route path="cobranzas" element={conPermiso('ACCESO_COBRANZAS', <ConsultaCobranzas />)} />
             <Route path="notas-credito-devolucion" element={conPermiso('ACCESO_NC_DEVOLUCION', <ConsultaNotasCredito key="DEV" tipo="DEV" />)} />
             <Route path="notas-credito-monto" element={conPermiso('ACCESO_NC_MONTO', <ConsultaNotasCredito key="MONTO" tipo="MONTO" />)} />
+            <Route path="compras" element={conPermiso('ACCESO_COMPRAS', <ConsultaCompras />)} />
+            <Route path="notas-credito-proveedor-devolucion" element={conPermiso('ACCESO_NC_PROVEEDOR_DEVOLUCION', <ConsultaNotasCreditoProveedor key="DEV" tipo="DEV" />)} />
+            <Route path="notas-credito-proveedor-monto" element={conPermiso('ACCESO_NC_PROVEEDOR_MONTO', <ConsultaNotasCreditoProveedor key="MONTO" tipo="MONTO" />)} />
           </Route>
           <Route path="reportes" element={conPermiso('RPT_CAJA', <Reportes />)} />
           <Route path="administracion">

@@ -6,7 +6,9 @@ import {
     limpiarTemporal,
     guardarCompra,
     buscarProducto,
-    buscarProveedor
+    buscarProveedor,
+    listarCompras,
+    consultarCompra
 } from '../controllers/compras.controller';
 
 const router = Router();
@@ -24,5 +26,9 @@ router.delete('/detalle/tmp/all', limpiarTemporal);  // Limpiar todo el temporal
 router.post('/', guardarCompra);
 
 router.get('/proveedor', buscarProveedor);
+
+// Consulta de compras (la anulación va por /anulacion/compra)
+router.get('/consulta', listarCompras);
+router.get('/consulta/:id', consultarCompra);
 
 export default router;

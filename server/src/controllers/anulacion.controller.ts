@@ -61,7 +61,7 @@ export const verificarPermisoAnular = async (req: Request, res: Response): Promi
       return;
     }
 
-    const tiposValidos = ['FACT', 'COMPRA', 'REMISION', 'RECEPCION', 'AJUSTE', 'CARGA', 'COBRO', 'NC'];
+    const tiposValidos = ['FACT', 'COMPRA', 'REMISION', 'RECEPCION', 'AJUSTE', 'CARGA', 'COBRO', 'NC', 'NCP'];
     if (!tiposValidos.includes(tipo.toUpperCase())) {
       res.status(400).json({
         success: false,
@@ -252,6 +252,76 @@ export const anularNotaCredito = async (req: Request, res: Response): Promise<vo
         { name: tipo === 'DEV' ? 'idNotaCredito' : 'idNotaCreditoMonto', type: sql.Int, value: Number(idDocumento) },
         { name: 'idUsuario', type: sql.Int, value: idUsuarioAutorizador },
         { name: 'motivo', type: sql.VarChar(255), value: String(explica) },
+      ] as any,
+    });
+
+    res.status(200).json({ success: true, message: 'Nota de crédito anulada correctamente' });
+  } catch (error: any) {
+    sendError(res, error, 'Error al anular la nota de crédito');
+  }
+};
+
+/**
+ * Anula una compra (fiscal o no fiscal): saca del stock lo que había cargado, en el depósito de cada línea.
+ * El autorizador necesita el permiso anularCompra (sp_permisoAnular tipo 'COMPRA'). Una compra fiscal con
+ * notas de crédito del proveedor activas no se puede anular.
+ *
+ * Body: { idCompra, noFiscal, explica, usuarioAutorizador, passwordAutorizador }
+ */
+export const anularCompra = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { idCompra, noFiscal, explica } = req.body;
+
+    if (!Number(idCompra) || !explica) {
+      res.status(400).json({ success: false, message: 'Faltan parámetros requeridos: idCompra, explica' });
+      return;
+    }
+
+    const idUsuarioAutorizador = await obtenerAutorizador(req, res, 'COMPRA');
+    if (idUsuarioAutorizador === null) return;
+
+    await executeRequest({
+      query: 'sp_anularCompra',
+      isStoredProcedure: true,
+      inputs: [
+        { name: 'idCompra', type: sql.Int, value: Number(idCompra) },
+        { name: 'noFiscal', type: sql.Bit, value: noFiscal === true || noFiscal === 1 },
+        { name: 'idUsuario', type: sql.Int, value: idUsuarioAutorizador },
+        { name: 'motivo', type: sql.VarChar(255), value: String(explica).slice(0, 255) },
+      ] as any,
+    });
+
+    res.status(200).json({ success: true, message: 'Compra anulada correctamente' });
+  } catch (error: any) {
+    sendError(res, error, 'Error al anular la compra');
+  }
+};
+
+/**
+ * Anula una nota de crédito de proveedor (por devolución o por monto). El autorizador necesita el permiso
+ * anularNotaCreditoProveedor (sp_permisoAnular tipo 'NCP'). En la devolución la mercadería vuelve al stock.
+ *
+ * Body: { tipo: 'DEV' | 'MONTO', idDocumento, explica, usuarioAutorizador, passwordAutorizador }
+ */
+export const anularNotaCreditoProveedor = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { tipo, idDocumento, explica } = req.body;
+
+    if ((tipo !== 'DEV' && tipo !== 'MONTO') || !Number(idDocumento) || !explica) {
+      res.status(400).json({ success: false, message: 'Faltan parámetros requeridos: tipo, idDocumento, explica' });
+      return;
+    }
+
+    const idUsuarioAutorizador = await obtenerAutorizador(req, res, 'NCP');
+    if (idUsuarioAutorizador === null) return;
+
+    await executeRequest({
+      query: tipo === 'DEV' ? 'sp_anularNotaCreditoProveedor' : 'sp_anularNotaCreditoMontoProveedor',
+      isStoredProcedure: true,
+      inputs: [
+        { name: tipo === 'DEV' ? 'idNotaCreditoProveedor' : 'idNotaCreditoMontoProveedor', type: sql.Int, value: Number(idDocumento) },
+        { name: 'idUsuario', type: sql.Int, value: idUsuarioAutorizador },
+        { name: 'motivo', type: sql.VarChar(255), value: String(explica).slice(0, 255) },
       ] as any,
     });
 

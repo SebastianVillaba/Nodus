@@ -44,6 +44,7 @@ export default function UsuariosABM(): JSX.Element {
         anularCargaProducto: false,
         anularCobro: false,
             anularNotaCredito: false,
+            anularNotaCreditoProveedor: false,
     });
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
@@ -119,6 +120,7 @@ export default function UsuariosABM(): JSX.Element {
             anularCargaProducto: false,
             anularCobro: false,
             anularNotaCredito: false,
+            anularNotaCreditoProveedor: false,
         });
 
         setLoading(true);
@@ -213,6 +215,7 @@ export default function UsuariosABM(): JSX.Element {
             anularCargaProducto: false,
             anularCobro: false,
             anularNotaCredito: false,
+            anularNotaCreditoProveedor: false,
         });
     };
 

@@ -197,7 +197,8 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           icon: <LocalShippingIcon />,
           subItems: [
             { text: 'Compras', path: '/compras', icon: <ShoppingCartIcon />, permiso: 'ACCESO_COMPRAS' },
-            // Nota de Crédito de Proveedor: se agrega cuando esté el módulo
+            { text: 'NC Proveedor por Devolución', path: '/notas-credito-proveedor/devolucion', icon: <AssignmentReturnIcon />, permiso: 'ACCESO_NC_PROVEEDOR_DEVOLUCION' },
+            { text: 'NC Proveedor por Monto', path: '/notas-credito-proveedor/monto', icon: <RequestQuoteIcon />, permiso: 'ACCESO_NC_PROVEEDOR_MONTO' },
           ],
         },
         {
@@ -268,6 +269,20 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           subItems: [
             { text: 'Por Devolución', path: '/consultas/notas-credito-devolucion', icon: <AssignmentReturnIcon />, permiso: 'ACCESO_NC_DEVOLUCION' },
             { text: 'Por Monto', path: '/consultas/notas-credito-monto', icon: <RequestQuoteIcon />, permiso: 'ACCESO_NC_MONTO' },
+          ],
+        },
+        {
+          text: 'Consulta de Compras',
+          path: '/consultas/compras',
+          permiso: 'ACCESO_COMPRAS',
+          icon: <ShoppingCartIcon />,
+        },
+        {
+          text: 'Consulta NC de Proveedor',
+          icon: <LocalShippingIcon />,
+          subItems: [
+            { text: 'Por Devolución', path: '/consultas/notas-credito-proveedor-devolucion', icon: <AssignmentReturnIcon />, permiso: 'ACCESO_NC_PROVEEDOR_DEVOLUCION' },
+            { text: 'Por Monto', path: '/consultas/notas-credito-proveedor-monto', icon: <RequestQuoteIcon />, permiso: 'ACCESO_NC_PROVEEDOR_MONTO' },
           ],
         },
         {

@@ -12,6 +12,7 @@ export interface CrearUsuarioRequest {
     anularCargaProducto: boolean;
     anularCobro?: boolean;
     anularNotaCredito?: boolean;
+    anularNotaCreditoProveedor?: boolean;
 }
 
 export interface ModificarUsuarioRequest {
@@ -28,6 +29,7 @@ export interface ModificarUsuarioRequest {
     anularCargaProducto: boolean;
     anularCobro?: boolean;
     anularNotaCredito?: boolean;
+    anularNotaCreditoProveedor?: boolean;
 }
 
 export interface Usuario {
@@ -55,4 +57,5 @@ export interface UsuarioDetalle {
     anularCargaProducto: boolean;
     anularCobro?: boolean;
     anularNotaCredito?: boolean;
+    anularNotaCreditoProveedor?: boolean;
 }

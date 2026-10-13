@@ -33,6 +33,7 @@ import historialClienteRoutes from './historialCliente.routes';
 import timbradoRoutes from './timbrado.routes';
 import cobroCreditoRoutes from './cobroCredito.routes';
 import notaCreditoRoutes from './notaCredito.routes';
+import notaCreditoProveedorRoutes from './notaCreditoProveedor.routes';
 import { verifyToken, forzarUsuarioAutenticado } from '../Middlewares/auth.middleware';
 import { requierePermiso, requierePermisoEscritura, PERMISOS } from '../Middlewares/permisos.middleware';
 
@@ -85,5 +86,6 @@ router.use('/historial-cliente', requierePermiso(PERMISOS.HISTORIAL_CLIENTE), hi
 router.use('/timbrado', timbradoRoutes);
 router.use('/cobro-credito', cobroCreditoRoutes);
 router.use('/nota-credito', notaCreditoRoutes);
+router.use('/nota-credito-proveedor', notaCreditoProveedorRoutes);
 
 export default router;

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verificarPermisoAnular, anularFacturacion, anularCargaProducto, anularCobroCredito, anularNotaCredito } from '../controllers/anulacion.controller';
+import { verificarPermisoAnular, anularFacturacion, anularCargaProducto, anularCobroCredito, anularNotaCredito, anularCompra, anularNotaCreditoProveedor } from '../controllers/anulacion.controller';
 
 const router = Router();
 
@@ -22,6 +22,14 @@ router.post('/cobro-credito', anularCobroCredito);
 // Anula una nota de crédito (por devolución o por monto)
 // POST /api/anulacion/nota-credito
 router.post('/nota-credito', anularNotaCredito);
+
+// Anula una compra (fiscal o no fiscal)
+// POST /api/anulacion/compra
+router.post('/compra', anularCompra);
+
+// Anula una nota de crédito de proveedor (por devolución o por monto)
+// POST /api/anulacion/nota-credito-proveedor
+router.post('/nota-credito-proveedor', anularNotaCreditoProveedor);
 
 export default router;
 
