@@ -44,6 +44,7 @@ const ConsultaNotasCreditoProveedor = lazy(() => import('./pages/Consultas/Consu
 const ConsultaCompras = lazy(() => import('./pages/Consultas/ConsultaCompras'));
 const SeguimientoStock = lazy(() => import('./pages/Consultas/SeguimientoStock'));
 const Reportes = lazy(() => import('./pages/Reportes/Reportes'));
+const LibroIva = lazy(() => import('./pages/Reportes/LibroIva'));
 const CrearOferta = lazy(() => import('./pages/Ofertas/CrearOferta'));
 const VerOfertas = lazy(() => import('./pages/Ofertas/VerOfertas'));
 const ConsultaStock = lazy(() => import('./pages/Mercaderia/ConsultaStock'));
@@ -156,6 +157,7 @@ const AppRouter: React.FC = () => {
             <Route path="notas-credito-proveedor-monto" element={conPermiso('ACCESO_NC_PROVEEDOR_MONTO', <ConsultaNotasCreditoProveedor key="MONTO" tipo="MONTO" />)} />
           </Route>
           <Route path="reportes" element={conPermiso('RPT_CAJA', <Reportes />)} />
+          <Route path="reportes/libro-iva" element={conPermiso('ACCESO_LIBRO_IVA', <LibroIva />)} />
           <Route path="administracion">
             <Route path="roles" element={<Roles />} />
             <Route path="usuarios" element={<UsuariosABM />} />

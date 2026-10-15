@@ -38,6 +38,7 @@ import ApiIcon from '@mui/icons-material/Api';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import AssignmentReturnIcon from '@mui/icons-material/AssignmentReturn';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { clearSession } from '../../services/auth';
 import { usePermisos, tienePermiso } from '../../hooks/usePermission';
 
@@ -311,6 +312,12 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           path: '/reportes',
           permiso: 'RPT_CAJA',
           icon: <ReceiptIcon />,
+        },
+        {
+          text: 'Libro IVA / RG 90',
+          path: '/reportes/libro-iva',
+          permiso: 'ACCESO_LIBRO_IVA',
+          icon: <MenuBookIcon />,
         },
       ],
     },
