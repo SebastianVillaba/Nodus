@@ -45,6 +45,7 @@ const ConsultaCompras = lazy(() => import('./pages/Consultas/ConsultaCompras'));
 const SeguimientoStock = lazy(() => import('./pages/Consultas/SeguimientoStock'));
 const Reportes = lazy(() => import('./pages/Reportes/Reportes'));
 const LibroIva = lazy(() => import('./pages/Reportes/LibroIva'));
+const ArmadoCombos = lazy(() => import('./pages/Mercaderia/ArmadoCombos'));
 const CrearOferta = lazy(() => import('./pages/Ofertas/CrearOferta'));
 const VerOfertas = lazy(() => import('./pages/Ofertas/VerOfertas'));
 const ConsultaStock = lazy(() => import('./pages/Mercaderia/ConsultaStock'));
@@ -133,6 +134,7 @@ const AppRouter: React.FC = () => {
           <Route path="mercaderia">
             <Route path="ajustes" element={<Ajustes />} />
             <Route path="stock-inicial" element={<StockInicial />} />
+            <Route path="armado-combos" element={conPermiso('ACCESO_AJUSTES', <ArmadoCombos />)} />
             <Route path="carga-productos" element={<CargaProductos />} />
             <Route path="consulta-stock" element={<ConsultaStock />} />
             <Route path="generacion-codigo-barra" element={<GeneracionCodigoBarra />} />

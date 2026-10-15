@@ -15,6 +15,9 @@ import {
   Alert,
   CircularProgress,
   Stack,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
 } from '@mui/material';
 import TextField from '../UppercaseTextField';
 import AddIcon from '@mui/icons-material/Add';
@@ -46,6 +49,8 @@ export default function ProductosReferenciadosTab({
   const [selectedProduct, setSelectedProduct] = useState<ProductoResultado | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const [cantidad, setCantidad] = useState<string>('1');
+  // false = combo sin stock propio (al vender descuenta los componentes); true = con stock propio (se arma por adelantado)
+  const [controlaStock, setControlaStock] = useState<boolean>(false);
 
   // Refs para flujo de foco
   const buscadorRef = useRef<HTMLInputElement>(null);
@@ -78,33 +83,33 @@ export default function ProductosReferenciadosTab({
     }
   }, [idTerminalWeb]);
 
-  // Al montar, primero cargamos las referencias existentes del producto en la temporal
+  // Al montar, cargamos la composición guardada del combo en la temporal y la mostramos.
+  // No se limpia la temporal al desmontar: cada carga ya la reemplaza, y una limpieza asíncrona
+  // podía llegar después de la carga siguiente (doble montaje de React) y dejar el combo vacío.
   useEffect(() => {
+    let cancelado = false;
     const initializeTempTable = async () => {
       setLoading(true);
       setError('');
       try {
-        await productoService.cargarReferenciasTmp(idTerminalWeb, idProductoRef);
-        await loadDetails();
+        const config = await productoService.cargarReferenciasTmp(idTerminalWeb, idProductoRef);
+        if (cancelado) return;
+        setControlaStock(!!config?.controlaStock);
+        setItems(config?.detalle || []);
       } catch (err: any) {
+        if (cancelado) return;
         console.error(err);
         setError(err.message || 'Error al inicializar la tabla temporal de referencias');
       } finally {
-        setLoading(false);
+        if (!cancelado) setLoading(false);
       }
     };
 
     if (idProductoRef && idTerminalWeb) {
       initializeTempTable();
     }
-
-    // Al desmontar, limpiamos la temporal para no dejar residuos
-    return () => {
-      productoService.limpiarTemporal(idTerminalWeb).catch(err => {
-        console.error('Error al limpiar temporal al desmontar:', err);
-      });
-    };
-  }, [idProductoRef, idTerminalWeb, loadDetails]);
+    return () => { cancelado = true; };
+  }, [idProductoRef, idTerminalWeb]);
 
   // Seleccionar producto del modal o búsqueda directa
   const handleProductSelect = (product: ProductoResultado) => {
@@ -165,9 +170,9 @@ export default function ProductosReferenciadosTab({
       setError('Debe seleccionar un producto');
       return;
     }
-    const cantNum = parseInt(cantidad, 10);
-    if (isNaN(cantNum) || cantNum <= 0) {
-      setError('La cantidad debe ser un número entero mayor a 0');
+    const cantNum = Number(cantidad.replace(',', '.'));
+    if (!Number.isFinite(cantNum) || cantNum <= 0) {
+      setError('La cantidad debe ser mayor a 0');
       cantidadRef.current?.focus();
       return;
     }
@@ -216,7 +221,7 @@ export default function ProductosReferenciadosTab({
     setSuccess('');
     try {
       const idUsuario = getUsuarioId();
-      await productoService.guardarReferencias(idUsuario, idTerminalWeb, idProductoRef);
+      await productoService.guardarReferencias(idUsuario, idTerminalWeb, idProductoRef, controlaStock);
       setSuccess('Productos referenciados guardados con éxito');
       await loadDetails();
       if (onSaveSuccess) {
@@ -272,7 +277,7 @@ export default function ProductosReferenciadosTab({
                   agregarBtnRef.current?.focus();
                 }
               }}
-              inputProps={{ min: 1, step: 1 }}
+              inputProps={{ min: 0, step: 'any' }}
             />
           </Grid>
 
@@ -296,6 +301,18 @@ export default function ProductosReferenciadosTab({
             </Button>
           </Grid>
         </Grid>
+      </Paper>
+
+      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Tipo de combo</Typography>
+        <RadioGroup value={controlaStock ? '1' : '0'} onChange={(e) => setControlaStock(e.target.value === '1')}>
+          <FormControlLabel value="0" control={<Radio size="small" />} label={
+            <Typography variant="body2"><b>Sin stock propio</b> — al venderlo se descuentan sus componentes (ej: gaseosa + snack). Se puede vender mientras haya componentes.</Typography>
+          } />
+          <FormControlLabel value="1" control={<Radio size="small" />} label={
+            <Typography variant="body2"><b>Con stock propio</b> — se arma por adelantado en Mercadería → Armado de Combos (salen los componentes y entra el combo); al venderlo se descuenta solo el combo (ej: canasta navideña).</Typography>
+          } />
+        </RadioGroup>
       </Paper>
 
       <Typography variant="h6" gutterBottom sx={{ fontWeight: '500', mb: 1 }}>

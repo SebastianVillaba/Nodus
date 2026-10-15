@@ -215,6 +215,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           subItems: [
             { text: 'Ajustes', path: '/mercaderia/ajustes', icon: <InventoryIcon />, permiso: 'ACCESO_AJUSTES' },
             { text: 'Stock Inicial', path: '/mercaderia/stock-inicial', icon: <InventoryIcon />, permiso: 'ACCESO_AJUSTES' },
+            { text: 'Armado de Combos', path: '/mercaderia/armado-combos', icon: <InventoryIcon />, permiso: 'ACCESO_AJUSTES' },
             { text: 'Carga de Productos',path: '/mercaderia/carga-productos',icon: <InventoryIcon />, permiso: 'ACCESO_CARGA_PRODUCTOS' }
           ],
         },

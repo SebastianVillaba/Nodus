@@ -14,7 +14,7 @@ export const cargarReferenciasTmp = async (req: Request, res: Response): Promise
             return;
         }
 
-        await executeRequest({
+        const result = await executeRequest({
             query: 'sp_cargarProductoRefTmp',
             isStoredProcedure: true,
             inputs: [
@@ -23,7 +23,16 @@ export const cargarReferenciasTmp = async (req: Request, res: Response): Promise
             ]
         });
 
-        res.status(200).json({ success: true, message: 'Referencias cargadas en la tabla temporal correctamente' });
+        // Configuración del combo: controlaStock = true si tiene stock propio (se arma por adelantado)
+        const recordsets = (result as { recordsets?: any[][] }).recordsets ?? [];
+        const combo = recordsets[0]?.[0];
+        res.status(200).json({
+            success: true,
+            message: 'Referencias cargadas en la tabla temporal correctamente',
+            controlaStock: !!combo?.controlaStock,
+            esCombo: !!combo?.activo,
+            detalle: recordsets[1] ?? [],
+        });
     } catch (error: any) {
         sendError(res, error, 'Error al cargar referencias en la temporal');
     }
@@ -76,7 +85,7 @@ export const agregarDetalleTmp = async (req: Request, res: Response): Promise<vo
             inputs: [
                 { name: 'idTerminalWeb', type: sql.Int, value: Number(idTerminalWeb) },
                 { name: 'idProducto', type: sql.Int, value: Number(idProducto) },
-                { name: 'cantidad', type: sql.Int, value: Number(cantidad) }
+                { name: 'cantidad', type: sql.Numeric(10, 4), value: Number(cantidad) }
             ]
         });
 
@@ -125,7 +134,7 @@ export const eliminarDetalleTmp = async (req: Request, res: Response): Promise<v
  */
 export const guardarReferencias = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { idUsuarioAlta, idTerminalWeb, idProductoRef } = req.body;
+        const { idUsuarioAlta, idTerminalWeb, idProductoRef, controlaStock } = req.body;
 
         if (!idUsuarioAlta || !idTerminalWeb || !idProductoRef) {
             res.status(400).json({ success: false, message: 'Faltan datos requeridos (idUsuarioAlta, idTerminalWeb, idProductoRef)' });
@@ -138,7 +147,8 @@ export const guardarReferencias = async (req: Request, res: Response): Promise<v
             inputs: [
                 { name: 'idUsuarioAlta', type: sql.Int, value: Number(idUsuarioAlta) },
                 { name: 'idTerminalWeb', type: sql.Int, value: Number(idTerminalWeb) },
-                { name: 'idProductoRef', type: sql.Int, value: Number(idProductoRef) }
+                { name: 'idProductoRef', type: sql.Int, value: Number(idProductoRef) },
+                { name: 'controlaStock', type: sql.Bit, value: controlaStock === true || controlaStock === 1 }
             ]
         });
 
@@ -200,9 +210,10 @@ export const obtenerSugeridosProductoRef = async (req: Request, res: Response): 
                     ISNULL(SUM(d.cantidad * p.costo), 0) AS costoSugerido,
                     ISNULL(SUM(d.cantidad * p.precio), 0) AS precioSugerido,
                     COUNT(1) AS cantidadComponentes
-                FROM dbo.detProductoRef d
+                FROM dbo.cabProductoReferenciado c
+                INNER JOIN dbo.detProductoReferenciado d ON d.idProductoReferenciado = c.idProductoReferenciado
                 INNER JOIN dbo.producto p ON d.idProducto = p.idProducto
-                WHERE d.idProductoRef = @idProductoRef
+                WHERE c.idProducto = @idProductoRef AND c.activo = 1
             `,
             isStoredProcedure: false,
             inputs: [

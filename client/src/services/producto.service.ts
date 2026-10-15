@@ -350,12 +350,14 @@ export const productoService = {
   /**
    * Guarda las referencias persistiendo los datos de la temporal.
    */
-  guardarReferencias: async (idUsuarioAlta: number, idTerminalWeb: number, idProductoRef: number): Promise<any> => {
+  /** controlaStock: true = combo con stock propio (se arma por adelantado), false = descuenta sus componentes al vender */
+  guardarReferencias: async (idUsuarioAlta: number, idTerminalWeb: number, idProductoRef: number, controlaStock = false): Promise<any> => {
     try {
       const response = await axios.post(`${API_BASE_URL}/producto/ref/guardar`, {
         idUsuarioAlta,
         idTerminalWeb,
-        idProductoRef
+        idProductoRef,
+        controlaStock
       });
       return response.data;
     } catch (error: any) {
