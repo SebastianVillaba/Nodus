@@ -12,9 +12,19 @@ export interface AgregarDetalleVentaRequest {
   precioDescuento?: number;
 }
 
+export interface AgregarServicioVentaRequest {
+  idTerminalWeb: number;
+  idServicio: number;
+  cantidad: number;
+  precioUnitario: number;
+  precioDescuento: number;
+}
+
 export interface DetalleVentaTmp {
   idDetVentaTmp: number;
-  idProducto: number;
+  idProducto: number | null;
+  idServicio: number | null;
+  esServicio: boolean;
   codigo: string;
   nombreMercaderia: string;
   origen: string;
@@ -42,6 +52,19 @@ export const ventaService = {
     } catch (error: any) {
       console.error('Error al agregar detalle de venta:', error);
       throw new Error(error.response?.data?.message || 'Error al agregar producto');
+    }
+  },
+
+  /**
+   * Agrega un servicio al detalle de venta temporal (no mueve stock)
+   */
+  agregarServicioVenta: async (data: AgregarServicioVentaRequest): Promise<any> => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/venta/detalletmp/servicio`, data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error al agregar servicio:', error);
+      throw new Error(error.response?.data?.message || 'Error al agregar servicio');
     }
   },
 

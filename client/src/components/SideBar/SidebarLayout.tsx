@@ -24,6 +24,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import PeopleIcon from '@mui/icons-material/People';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import HomeRepairServiceIcon from '@mui/icons-material/HomeRepairService';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -174,6 +175,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           subItems: [
             { text: 'Persona-Entidad', path: '/abm/personas', icon: <PeopleIcon />, permiso: 'ACCESO_ABM' },
             { text: 'Productos', path: '/abm/productos', icon: <InventoryIcon />, permiso: 'ACCESO_ABM' },
+            { text: 'Servicios', path: '/abm/servicios', icon: <HomeRepairServiceIcon />, permiso: 'ACCESO_ABM' },
           ],
         },
       ],

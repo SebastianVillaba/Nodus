@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRoutes from './auth.routes';
 import personaRoutes from './persona.routes';
 import productoRoutes from './producto.routes';
+import servicioRoutes from './servicio.routes';
 import ubicacionRoutes from './ubicacion.routes';
 import ventaRoutes from './venta.routes';
 import terminalRoutes from './terminal.routes';
@@ -60,6 +61,7 @@ router.use(forzarUsuarioAutenticado());
 
 router.use('/persona', personaRoutes);
 router.use('/producto', requierePermisoEscritura(PERMISOS.ABM), productoRoutes);
+router.use('/servicio', requierePermisoEscritura(PERMISOS.ABM), servicioRoutes);
 router.use('/caja', requierePermisoEscritura(PERMISOS.CAJA), cajaRoutes);
 router.use('/ubicaciones', ubicacionRoutes);
 router.use('/venta', requierePermisoEscritura(PERMISOS.VENTAS), ventaRoutes);

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { agregarDetalleVenta, consultarDetalleVenta, eliminarDetalleVenta, guardarVenta, consultaFacturaCorrelativa, obtenerVendedores } from '../controllers/venta.controller';
+import { agregarDetalleVenta, agregarServicioVenta, consultarDetalleVenta, eliminarDetalleVenta, guardarVenta, consultaFacturaCorrelativa, obtenerVendedores } from '../controllers/venta.controller';
 // import { verifyToken } from '../Middlewares/auth.middleware'; // Deshabilitado temporalmente
 
 const router = Router();
@@ -7,6 +7,9 @@ const router = Router();
 // Ruta para agregar un item al detalle de venta temporal
 // TODO: Agregar autenticación cuando el sistema de login esté implementado
 router.post('/detalletmp', agregarDetalleVenta);
+
+// Ruta para agregar un servicio al detalle de venta temporal
+router.post('/detalletmp/servicio', agregarServicioVenta);
 
 // Ruta para consultar los items del detalle de venta temporal
 // TODO: Agregar autenticación cuando el sistema de login esté implementado

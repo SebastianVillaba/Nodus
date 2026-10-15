@@ -28,6 +28,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import HomeRepairServiceIcon from '@mui/icons-material/HomeRepairService';
 import type { ItemFactura, Cliente } from '../types/factura.types';
 import type { Caja } from '../types/caja.types';
 import { ventaService } from '../services/venta.service';
@@ -36,6 +37,8 @@ import facturaService, { ticketService } from '../services/ticket.service';
 import { productoService } from '../services/producto.service';
 import type { DatosFactura, DatosTicket } from '../types/ticket.types';
 import SearchProductModal from '../components/SearchProductModal';
+import SearchServicioModal from '../components/SearchServicioModal';
+import type { Servicio } from '../services/servicio.service';
 import CajaSelectorModal from '../components/CajaSelectorModal';
 import PagoModal from '../components/PagoModal';
 import TipoComprobanteModal from '../components/TipoComprobanteModal';
@@ -88,6 +91,9 @@ const Facturacion: React.FC = () => {
 
   // Estados para el detalle de items y referencias
   const [productoSeleccionado, setProductoSeleccionado] = useState<any | null>(null);
+  // Servicio elegido en el modal de servicios (sin stock); excluye a productoSeleccionado
+  const [servicioSeleccionado, setServicioSeleccionado] = useState<Servicio | null>(null);
+  const [openServicioModal, setOpenServicioModal] = useState(false);
   const [nombreProducto, setNombreProducto] = useState('');
   const [cantidadProducto, setCantidadProducto] = useState(1);
   const [precioProducto, setPrecioProducto] = useState(0);
@@ -143,6 +149,10 @@ const Facturacion: React.FC = () => {
       if (event.key === 'F2') {
         event.preventDefault();
         setOpenClienteModal(true);
+      }
+      if (event.key === 'F3') {
+        event.preventDefault();
+        setOpenServicioModal(true);
       }
     };
 
@@ -211,6 +221,7 @@ const Facturacion: React.FC = () => {
           idDetVentaTmp: det.idDetVentaTmp,
           nro: 0,
           idProducto: det.idProducto,
+          esServicio: !!det.esServicio,
           nombreMercaderia: det.nombreMercaderia,
           descripcion: det.nombreMercaderia,
           origen: det.origen,
@@ -261,6 +272,7 @@ const Facturacion: React.FC = () => {
 
   // Seleccionar producto para cargar en los inputs antes de agregar
   const handleSeleccionarProducto = async (producto: any) => {
+    setServicioSeleccionado(null);
     setProductoSeleccionado(producto);
     setNombreProducto(producto.nombreMercaderia || producto.nombre || '');
     setPrecioProducto(producto.precio || 0);
@@ -314,41 +326,70 @@ const Facturacion: React.FC = () => {
     }, 150);
   };
 
+  // Seleccionar servicio del modal: se cargan los campos de la línea igual que un producto
+  const handleSeleccionarServicio = (servicio: Servicio) => {
+    setOpenServicioModal(false);
+    setProductoSeleccionado(null);
+    setServicioSeleccionado(servicio);
+    setNombreProducto(servicio.nombreServicio);
+    setPrecioProducto(servicio.precio);
+    setPrecioDescuento(servicio.precio);
+    setPorcentajeDescuento(0);
+    setSubtotalProducto(cantidadProducto * servicio.precio);
+    setSelectedProductImg(null);
+    setLoadingImg(false);
+    setTimeout(() => {
+      precioDescuentoInputRef.current?.focus();
+      precioDescuentoInputRef.current?.select();
+    }, 150);
+  };
+
   // Agregar detalle de venta temporal tras validación
   const handleAgregarDetalle = async () => {
     if (!idTerminalWeb) {
       setError('No hay terminal configurada');
       return;
     }
-    if (!productoSeleccionado) {
-      setError('Debe seleccionar un producto primero');
+    if (!productoSeleccionado && !servicioSeleccionado) {
+      setError('Debe seleccionar un producto o un servicio primero');
       return;
     }
 
-    // Validar que el precio con descuento no sea menor que el costo del producto
-    const costoProducto = productoSeleccionado.costo || 0;
-    if (precioDescuento < costoProducto) {
+    // Validar que el precio con descuento no sea menor que el costo del producto (los servicios no tienen costo)
+    const costoProducto = productoSeleccionado?.costo || 0;
+    if (productoSeleccionado && precioDescuento < costoProducto) {
       setError('No se puede establecer un precio menor al costo del producto');
       return;
     }
 
     try {
       // Agregar a la BD
-      await ventaService.agregarDetalleVenta({
-        idTerminalWeb,
-        idUsuario,
-        idProducto: productoSeleccionado.idProducto,
-        idStock: productoSeleccionado.idStock || 1,
-        cantidad: cantidadProducto,
-        precioUnitario: precioProducto, // precio original
-        precioDescuento: precioDescuento // precio ingresado por el usuario
-      });
+      if (servicioSeleccionado) {
+        await ventaService.agregarServicioVenta({
+          idTerminalWeb,
+          idServicio: servicioSeleccionado.idServicio,
+          cantidad: cantidadProducto,
+          precioUnitario: precioProducto,
+          precioDescuento,
+        });
+      } else {
+        await ventaService.agregarDetalleVenta({
+          idTerminalWeb,
+          idUsuario,
+          idProducto: productoSeleccionado.idProducto,
+          idStock: productoSeleccionado.idStock || 1,
+          cantidad: cantidadProducto,
+          precioUnitario: precioProducto, // precio original
+          precioDescuento: precioDescuento // precio ingresado por el usuario
+        });
+      }
 
       // Recargar la lista
       await cargarDetalleVenta();
 
       // Limpiar estados de carga de producto
       setProductoSeleccionado(null);
+      setServicioSeleccionado(null);
       setNombreProducto('');
       setPrecioProducto(0);
       setPrecioDescuento(0);
@@ -876,6 +917,7 @@ const Facturacion: React.FC = () => {
                   flexDirection: 'column',
                   gap: 0.5
                 }}>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
                   <TextField
                     fullWidth
                     label="Buscar producto (código, código de barra o nombre)"
@@ -886,6 +928,16 @@ const Facturacion: React.FC = () => {
                     placeholder="Ingrese nombre o código del producto"
                     inputRef={busquedaInputRef}
                   />
+                  <Button
+                    variant="outlined"
+                    startIcon={<HomeRepairServiceIcon />}
+                    onClick={() => setOpenServicioModal(true)}
+                    sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+                    title="Buscar servicio (F3)"
+                  >
+                    Servicio (F3)
+                  </Button>
+                  </Box>
                   <TextField
                     fullWidth
                     size="small"
@@ -1029,7 +1081,7 @@ const Facturacion: React.FC = () => {
                       {items.map((item, index) => (
                         <TableRow key={index}>
                           <TableCell>{item.descripcion || item.nombreMercaderia}</TableCell>
-                          <TableCell>{item.origen === 'N' ? 'Nacional' : 'Importado'}</TableCell>
+                          <TableCell>{item.esServicio ? 'Servicio' : item.origen === 'N' ? 'Nacional' : 'Importado'}</TableCell>
                           <TableCell align='center'>{item.unidades}</TableCell>
                           <TableCell align="right">₲{(item.precioUnitario || item.precio || 0).toLocaleString()}</TableCell>
                           <TableCell align="right">₲{(item.subtotal || 0).toLocaleString()}</TableCell>
@@ -1101,7 +1153,7 @@ const Facturacion: React.FC = () => {
                   ) : (
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.5, textAlign: 'center' }}>
                       <Typography variant="caption" color="text.secondary">
-                        {productoSeleccionado ? 'Sin imagen' : 'Sin producto'}
+                        {servicioSeleccionado ? 'Servicio' : productoSeleccionado ? 'Sin imagen' : 'Sin producto'}
                       </Typography>
                     </Box>
                   )}
@@ -1187,6 +1239,13 @@ const Facturacion: React.FC = () => {
           idTerminalWeb={idTerminalWeb}
           onSelectProduct={handleSeleccionarProducto}
           busqueda={termino}
+        />
+
+        {/* Modal de búsqueda de servicios */}
+        <SearchServicioModal
+          open={openServicioModal}
+          onClose={() => setOpenServicioModal(false)}
+          onSelectServicio={handleSeleccionarServicio}
         />
 
         {/* Modal de búsqueda de cliente */}

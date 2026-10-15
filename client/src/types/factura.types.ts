@@ -15,7 +15,9 @@ export interface Conductor {
 
 export interface ItemFactura {
   idDetVentaTmp?: number;
-  idProducto?: number;
+  idProducto?: number | null;
+  /** Línea de servicio (sin stock) */
+  esServicio?: boolean;
   nro?: number;
   nombreMercaderia?: string;
   descripcion?: string;

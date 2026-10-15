@@ -13,6 +13,7 @@ const Facturacion = lazy(() => import('./pages/Facturacion'));
 const LoginPage = lazy(() => import('./pages/Login/LoginPage'));
 const PersonasABM = lazy(() => import('./pages/ABM/PersonasABM'));
 const ProductosABM = lazy(() => import('./pages/ABM/ProductosABM'));
+const ServiciosABM = lazy(() => import('./pages/ABM/ServiciosABM'));
 const Pedidos = lazy(() => import('./pages/Pedidos'));
 const Precobranza = lazy(() => import('./pages/Cobranzas/Precobranza'));
 const Cobranza = lazy(() => import('./pages/Cobranzas/Cobranza'));
@@ -102,6 +103,7 @@ const AppRouter: React.FC = () => {
           <Route path="abm" element={<ABM />}>
             <Route path="personas" element={conPermiso('ACCESO_ABM', <PersonasABM />)} />
             <Route path="productos" element={conPermiso('ACCESO_ABM', <ProductosABM />)} />
+            <Route path="servicios" element={conPermiso('ACCESO_ABM', <ServiciosABM />)} />
             <Route path="clientes" element={<ClientesABM />} />
           </Route>
           <Route path="clientes" element={<Clientes />}>

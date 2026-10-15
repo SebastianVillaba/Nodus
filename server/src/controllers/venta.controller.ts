@@ -60,6 +60,36 @@ export const agregarDetalleVenta = async (req: Request, res: Response): Promise<
 };
 
 /**
+ * Agrega un servicio al detalle de venta temporal (no controla ni mueve stock).
+ */
+export const agregarServicioVenta = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { idTerminalWeb, idServicio, cantidad, precioUnitario, precioDescuento } = req.body;
+
+    if (!idTerminalWeb || !idServicio || !(Number(cantidad) > 0) || precioDescuento === undefined) {
+      res.status(400).json({ success: false, message: 'Faltan parámetros requeridos (idServicio, cantidad, precio).' });
+      return;
+    }
+
+    await executeRequest({
+      query: 'sp_agregarServicioVentaTmp',
+      isStoredProcedure: true,
+      inputs: [
+        { name: 'idTerminalWeb', type: sql.Int, value: Number(idTerminalWeb) },
+        { name: 'idServicio', type: sql.Int, value: Number(idServicio) },
+        { name: 'cantidad', type: sql.Numeric(10, 4), value: Number(cantidad) },
+        { name: 'precioUnitario', type: sql.Money, value: Number(precioUnitario ?? precioDescuento) },
+        { name: 'precioDescuento', type: sql.Money, value: Number(precioDescuento) },
+      ],
+    });
+
+    res.status(201).json({ success: true, message: 'Servicio agregado al detalle de venta.' });
+  } catch (error: any) {
+    sendError(res, error, 'Error al agregar el servicio al detalle de venta');
+  }
+};
+
+/**
  * Controller para consultar los items del detalle de venta temporal (carrito).
  */
 export const consultarDetalleVenta = async (req: Request, res: Response): Promise<void> => {
