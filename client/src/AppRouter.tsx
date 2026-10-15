@@ -42,6 +42,7 @@ const NotaCreditoProveedorDevolucion = lazy(() => import('./pages/NotasCreditoPr
 const NotaCreditoProveedorMonto = lazy(() => import('./pages/NotasCreditoProveedor/NotaCreditoProveedorMonto'));
 const ConsultaNotasCreditoProveedor = lazy(() => import('./pages/Consultas/ConsultaNotasCreditoProveedor'));
 const ConsultaCompras = lazy(() => import('./pages/Consultas/ConsultaCompras'));
+const SeguimientoStock = lazy(() => import('./pages/Consultas/SeguimientoStock'));
 const Reportes = lazy(() => import('./pages/Reportes/Reportes'));
 const CrearOferta = lazy(() => import('./pages/Ofertas/CrearOferta'));
 const VerOfertas = lazy(() => import('./pages/Ofertas/VerOfertas'));
@@ -150,6 +151,7 @@ const AppRouter: React.FC = () => {
             <Route path="notas-credito-devolucion" element={conPermiso('ACCESO_NC_DEVOLUCION', <ConsultaNotasCredito key="DEV" tipo="DEV" />)} />
             <Route path="notas-credito-monto" element={conPermiso('ACCESO_NC_MONTO', <ConsultaNotasCredito key="MONTO" tipo="MONTO" />)} />
             <Route path="compras" element={conPermiso('ACCESO_COMPRAS', <ConsultaCompras />)} />
+            <Route path="seguimiento-stock" element={conPermiso('SEGUIMIENTO_STOCK', <SeguimientoStock />)} />
             <Route path="notas-credito-proveedor-devolucion" element={conPermiso('ACCESO_NC_PROVEEDOR_DEVOLUCION', <ConsultaNotasCreditoProveedor key="DEV" tipo="DEV" />)} />
             <Route path="notas-credito-proveedor-monto" element={conPermiso('ACCESO_NC_PROVEEDOR_MONTO', <ConsultaNotasCreditoProveedor key="MONTO" tipo="MONTO" />)} />
           </Route>

@@ -296,6 +296,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
           icon: <InventoryIcon />,
           subItems: [
             { text: 'Consulta Stock', path: '/mercaderia/consulta-stock', icon: <InventoryIcon />, permiso: 'VER_STOCK' },
+            { text: 'Seguimiento de Stock', path: '/consultas/seguimiento-stock', icon: <HistoryIcon />, permiso: 'SEGUIMIENTO_STOCK' },
             { text: 'Consulta Carga de Productos', path: '/consultas/carga-productos', icon: <InventoryIcon />, permiso: 'ACCESO_CARGA_PRODUCTOS' }
           ],
         }

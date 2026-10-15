@@ -34,6 +34,7 @@ import timbradoRoutes from './timbrado.routes';
 import cobroCreditoRoutes from './cobroCredito.routes';
 import notaCreditoRoutes from './notaCredito.routes';
 import notaCreditoProveedorRoutes from './notaCreditoProveedor.routes';
+import movimientoStockRoutes from './movimientoStock.routes';
 import { verifyToken, forzarUsuarioAutenticado } from '../Middlewares/auth.middleware';
 import { requierePermiso, requierePermisoEscritura, PERMISOS } from '../Middlewares/permisos.middleware';
 
@@ -87,5 +88,6 @@ router.use('/timbrado', timbradoRoutes);
 router.use('/cobro-credito', cobroCreditoRoutes);
 router.use('/nota-credito', notaCreditoRoutes);
 router.use('/nota-credito-proveedor', notaCreditoProveedorRoutes);
+router.use('/seguimiento-stock', requierePermiso(PERMISOS.SEGUIMIENTO_STOCK), movimientoStockRoutes);
 
 export default router;
